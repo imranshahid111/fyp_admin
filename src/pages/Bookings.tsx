@@ -1,12 +1,31 @@
-import { useState } from 'react';
-import { Calendar, TrendingUp, Truck, DollarSign, Search, Download } from 'lucide-react';
-import { mockBookings } from '../data/mockData';
+import { useState, useEffect } from 'react';
+import { Calendar, TrendingUp, Truck, DollarSign, Search, Download, Loader2 } from 'lucide-react';
+import { apiService } from '../services/api';
+import type { Booking } from '../types';
 import StatusBadge from '../components/StatusBadge';
 
 export default function Bookings() {
+  const [bookings, setBookings] = useState<Booking[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
 
-  const filteredBookings = mockBookings.filter((booking) => {
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      const res = await apiService.getBookings();
+      setBookings(res.data);
+    } catch (error) {
+      console.error('Error fetching bookings:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const filteredBookings = bookings.filter((booking) => {
     return (
       booking.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
       booking.userName.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -14,15 +33,23 @@ export default function Bookings() {
     );
   });
 
-  const totalBookings = mockBookings.length;
-  const completedBookings = mockBookings.filter(b => b.status === 'completed').length;
-  const totalRevenue = mockBookings.reduce((sum, b) => sum + b.fare, 0);
-  const avgFare = totalRevenue / totalBookings;
+  const totalBookingsCount = bookings.length;
+  const completedBookings = bookings.filter(b => b.status === 'completed').length;
+  const totalRevenueValue = bookings.reduce((sum, b) => sum + b.fare, 0);
+  const avgFareValue = totalBookingsCount > 0 ? totalRevenueValue / totalBookingsCount : 0;
 
-  const truckTypeStats = mockBookings.reduce((acc, booking) => {
+  const truckTypeStats = bookings.reduce((acc, booking) => {
     acc[booking.truckType] = (acc[booking.truckType] || 0) + 1;
     return acc;
   }, {} as Record<string, number>);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="w-12 h-12 text-indigo-600 animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -37,7 +64,7 @@ export default function Bookings() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600">Total Bookings</p>
-              <p className="text-2xl font-bold text-gray-900 mt-1">{totalBookings}</p>
+              <p className="text-2xl font-bold text-gray-900 mt-1">{totalBookingsCount}</p>
             </div>
             <div className="bg-blue-500 rounded-full p-3">
               <Calendar className="w-6 h-6 text-white" />
@@ -51,7 +78,7 @@ export default function Bookings() {
               <p className="text-sm text-gray-600">Completed</p>
               <p className="text-2xl font-bold text-gray-900 mt-1">{completedBookings}</p>
               <p className="text-xs text-green-600 mt-1">
-                {((completedBookings / totalBookings) * 100).toFixed(0)}% completion rate
+                {totalBookingsCount > 0 ? ((completedBookings / totalBookingsCount) * 100).toFixed(0) : 0}% completion rate
               </p>
             </div>
             <div className="bg-green-500 rounded-full p-3">
@@ -64,7 +91,7 @@ export default function Bookings() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600">Total Revenue</p>
-              <p className="text-2xl font-bold text-gray-900 mt-1">${totalRevenue.toLocaleString()}</p>
+              <p className="text-2xl font-bold text-gray-900 mt-1">${totalRevenueValue.toLocaleString()}</p>
             </div>
             <div className="bg-purple-500 rounded-full p-3">
               <DollarSign className="w-6 h-6 text-white" />
@@ -76,7 +103,7 @@ export default function Bookings() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600">Avg Fare</p>
-              <p className="text-2xl font-bold text-gray-900 mt-1">${avgFare.toFixed(0)}</p>
+              <p className="text-2xl font-bold text-gray-900 mt-1">${avgFareValue.toFixed(0)}</p>
             </div>
             <div className="bg-orange-500 rounded-full p-3">
               <Truck className="w-6 h-6 text-white" />
@@ -96,9 +123,9 @@ export default function Bookings() {
                 <span className="text-2xl font-bold text-blue-600">{count}</span>
               </div>
               <div className="mt-2 bg-gray-200 rounded-full h-2">
-                <div 
-                  className="bg-blue-600 h-2 rounded-full" 
-                  style={{ width: `${(count / totalBookings) * 100}%` }}
+                <div
+                  className="bg-blue-600 h-2 rounded-full"
+                  style={{ width: `${totalBookingsCount > 0 ? (count / totalBookingsCount) * 100 : 0}%` }}
                 />
               </div>
             </div>

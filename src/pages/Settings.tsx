@@ -1,21 +1,44 @@
-import { useState } from 'react';
-import { Save, Plus, X } from 'lucide-react';
-import { mockSettings } from '../data/mockData';
+import { useState, useEffect } from 'react';
+import { Save, Plus, X, Loader2 } from 'lucide-react';
+import { apiService } from '../services/api';
 import type { Settings as SettingsType } from '../types';
 
 export default function Settings() {
-  const [settings, setSettings] = useState<SettingsType>(mockSettings);
+  const [settings, setSettings] = useState<SettingsType | null>(null);
+  const [loading, setLoading] = useState(true);
   const [newTruckType, setNewTruckType] = useState('');
   const [newJobCategory, setNewJobCategory] = useState('');
   const [saved, setSaved] = useState(false);
 
-  const handleSave = () => {
-    // In a real app, this would save to the backend
-    setSaved(true);
-    setTimeout(() => setSaved(false), 3000);
+  useEffect(() => {
+    fetchSettings();
+  }, []);
+
+  const fetchSettings = async () => {
+    try {
+      setLoading(true);
+      const res = await apiService.getSettings();
+      setSettings(res.data);
+    } catch (error) {
+      console.error('Error fetching settings:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSave = async () => {
+    if (!settings) return;
+    try {
+      await apiService.updateSettings(settings);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 3000);
+    } catch (error) {
+      console.error('Error saving settings:', error);
+    }
   };
 
   const addTruckType = () => {
+    if (!settings) return;
     if (newTruckType && !settings.truckTypes.includes(newTruckType)) {
       setSettings({
         ...settings,
@@ -26,6 +49,7 @@ export default function Settings() {
   };
 
   const removeTruckType = (type: string) => {
+    if (!settings) return;
     setSettings({
       ...settings,
       truckTypes: settings.truckTypes.filter(t => t !== type),
@@ -33,6 +57,7 @@ export default function Settings() {
   };
 
   const addJobCategory = () => {
+    if (!settings) return;
     if (newJobCategory && !settings.jobCategories.includes(newJobCategory)) {
       setSettings({
         ...settings,
@@ -43,11 +68,22 @@ export default function Settings() {
   };
 
   const removeJobCategory = (category: string) => {
+    if (!settings) return;
     setSettings({
       ...settings,
       jobCategories: settings.jobCategories.filter(c => c !== category),
     });
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="w-12 h-12 text-indigo-600 animate-spin" />
+      </div>
+    );
+  }
+
+  if (!settings) return null;
 
   return (
     <div className="space-y-6">
@@ -77,7 +113,7 @@ export default function Settings() {
         <p className="text-sm text-gray-600 mb-4">
           Manage the types of trucks available on the platform
         </p>
-        
+
         <div className="flex gap-2 mb-4">
           <input
             type="text"
@@ -95,7 +131,7 @@ export default function Settings() {
             Add
           </button>
         </div>
-        
+
         <div className="flex flex-wrap gap-2">
           {settings.truckTypes.map((type) => (
             <div
@@ -120,7 +156,7 @@ export default function Settings() {
         <p className="text-sm text-gray-600 mb-4">
           Define the categories of jobs available on the platform
         </p>
-        
+
         <div className="flex gap-2 mb-4">
           <input
             type="text"
@@ -138,7 +174,7 @@ export default function Settings() {
             Add
           </button>
         </div>
-        
+
         <div className="flex flex-wrap gap-2">
           {settings.jobCategories.map((category) => (
             <div
@@ -160,7 +196,7 @@ export default function Settings() {
       {/* Platform Configuration */}
       <div className="bg-white rounded-lg shadow p-6">
         <h2 className="text-xl font-bold text-gray-900 mb-4">Platform Configuration</h2>
-        
+
         <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -194,7 +230,7 @@ export default function Settings() {
       {/* Contact Information */}
       <div className="bg-white rounded-lg shadow p-6">
         <h2 className="text-xl font-bold text-gray-900 mb-4">Support Contact Information</h2>
-        
+
         <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">

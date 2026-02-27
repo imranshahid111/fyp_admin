@@ -1,26 +1,33 @@
-import { useState, ChangeEvent } from 'react';
-import { Search, Filter, Eye, CheckCircle, XCircle, Star, Ban, Plus, Clock, Users } from 'lucide-react';
-import { mockTruckOwners } from '../data/mockData';
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router';
+import { Search, Filter, Eye, CheckCircle, XCircle, Star, Ban, Plus, Clock, Users, Loader2 } from 'lucide-react';
+import { apiService } from '../services/api';
 import type { TruckOwner } from '../types';
 import StatusBadge from '../components/StatusBadge';
-import Modal from '../components/Modal';
 
 export default function TruckOwners() {
-  const [truckOwners, setTruckOwners] = useState<TruckOwner[]>(mockTruckOwners);
+  const navigate = useNavigate();
+  const [truckOwners, setTruckOwners] = useState<TruckOwner[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [newOwner, setNewOwner] = useState({
-    name: '',
-    email: '',
-    phone: '',
-    company: '',
-    totalTrucks: 0,
-    totalDrivers: 0,
-  });
-  const [error, setError] = useState<string>('');
 
-  // Filtered truck owners based on search term and status filter
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      const res = await apiService.getTruckOwners();
+      setTruckOwners(res.data);
+    } catch (error) {
+      console.error('Error fetching truck owners:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const filteredTruckOwners = truckOwners.filter((owner: TruckOwner) => {
     const matchesSearch =
       owner.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -32,51 +39,46 @@ export default function TruckOwners() {
     return matchesSearch && matchesStatus;
   });
 
-  // Approve, reject, and deactivate truck owners
-  const handleApprove = (ownerId: string) => {
-    setTruckOwners(truckOwners.map((owner: TruckOwner) =>
-      owner.id === ownerId ? { ...owner, status: 'approved' } : owner
-    ));
-  };
-
-  const handleReject = (ownerId: string) => {
-    setTruckOwners(truckOwners.map((owner: TruckOwner) =>
-      owner.id === ownerId ? { ...owner, status: 'rejected' } : owner
-    ));
-  };
-
-  const handleDeactivate = (ownerId: string) => {
-    setTruckOwners(truckOwners.map((owner: TruckOwner) =>
-      owner.id === ownerId ? { ...owner, status: 'inactive' } : owner
-    ));
-  };
-
-  // Add new truck owner and reset form state
-  const handleAddOwner = () => {
-    if (newOwner.name && newOwner.email && newOwner.phone && newOwner.company) {
-      const owner: TruckOwner = {
-        id: `TO${String(truckOwners.length + 1).padStart(3, '0')}`,
-        ...newOwner,
-        registrationDate: new Date().toISOString().split('T')[0],
-        status: 'pending',
-        rating: 0,
-      };
-
-      setTruckOwners([owner, ...truckOwners]);
-      setNewOwner({
-        name: '',
-        email: '',
-        phone: '',
-        company: '',
-        totalTrucks: 0,
-        totalDrivers: 0,
-      });
-      setError('');
-      setShowAddModal(false);
-    } else {
-      setError('Please fill out all fields correctly.');
+  const handleApprove = async (ownerId: string) => {
+    try {
+      await apiService.updateTruckOwner(ownerId, { status: 'approved' });
+      setTruckOwners(truckOwners.map((owner: TruckOwner) =>
+        owner.id === ownerId ? { ...owner, status: 'approved' } : owner
+      ));
+    } catch (error) {
+      console.error('Error approving truck owner:', error);
     }
   };
+
+  const handleReject = async (ownerId: string) => {
+    try {
+      await apiService.updateTruckOwner(ownerId, { status: 'rejected' });
+      setTruckOwners(truckOwners.map((owner: TruckOwner) =>
+        owner.id === ownerId ? { ...owner, status: 'rejected' } : owner
+      ));
+    } catch (error) {
+      console.error('Error rejecting truck owner:', error);
+    }
+  };
+
+  const handleDeactivate = async (ownerId: string) => {
+    try {
+      await apiService.updateTruckOwner(ownerId, { status: 'inactive' });
+      setTruckOwners(truckOwners.map((owner: TruckOwner) =>
+        owner.id === ownerId ? { ...owner, status: 'inactive' } : owner
+      ));
+    } catch (error) {
+      console.error('Error deactivating truck owner:', error);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="w-12 h-12 text-indigo-600 animate-spin" />
+      </div>
+    );
+  }
 
   const pendingCount = truckOwners.filter((o: TruckOwner) => o.status === 'pending').length;
   const approvedCount = truckOwners.filter((o: TruckOwner) => o.status === 'approved').length;
@@ -120,7 +122,7 @@ export default function TruckOwners() {
           <p className="text-gray-600 mt-2">Manage truck owners and their registrations</p>
         </div>
         <button
-          onClick={() => setShowAddModal(true)}
+          onClick={() => navigate('/truck-owners/add')}
           className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-xl hover:shadow-lg hover:shadow-indigo-500/30 transition-all duration-200"
         >
           <Plus className="w-5 h-5" />
@@ -226,7 +228,8 @@ export default function TruckOwners() {
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-2">
                       <button
-                        className="text-indigo-600 hover:text-indigo-800 p-2 hover:bg-indigo-50 rounded-lg transition-all"
+                        onClick={() => navigate(`/truck-owners/${owner.id}`)}
+                        className="p-2 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all"
                         title="View Details"
                       >
                         <Eye className="w-5 h-5" />
@@ -271,126 +274,6 @@ export default function TruckOwners() {
           </div>
         )}
       </div>
-
-      {/* Add Truck Owner Modal */}
-      <Modal
-        isOpen={showAddModal}
-        onClose={() => setShowAddModal(false)}
-        title="Add New Truck Owner"
-        size="md"
-      >
-        <div className="p-6 space-y-5">
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
-              Full Name *
-            </label>
-            <input
-              type="text"
-              value={newOwner.name}
-              onChange={(e) => setNewOwner({ ...newOwner, name: e.target.value })}
-              placeholder="Enter full name"
-              className="w-full px-4 py-3 bg-gray-50 border-0 rounded-xl focus:ring-2 focus:ring-indigo-500 transition-all"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
-              Company Name *
-            </label>
-            <input
-              type="text"
-              value={newOwner.company}
-              onChange={(e) => setNewOwner({ ...newOwner, company: e.target.value })}
-              placeholder="Enter company name"
-              className="w-full px-4 py-3 bg-gray-50 border-0 rounded-xl focus:ring-2 focus:ring-indigo-500 transition-all"
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Email *
-              </label>
-              <input
-                type="email"
-                value={newOwner.email}
-                onChange={(e) => setNewOwner({ ...newOwner, email: e.target.value })}
-                placeholder="email@example.com"
-                className="w-full px-4 py-3 bg-gray-50 border-0 rounded-xl focus:ring-2 focus:ring-indigo-500 transition-all"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Phone *
-              </label>
-              <input
-                type="tel"
-                value={newOwner.phone}
-                onChange={(e) => setNewOwner({ ...newOwner, phone: e.target.value })}
-                placeholder="+1-555-0000"
-                className="w-full px-4 py-3 bg-gray-50 border-0 rounded-xl focus:ring-2 focus:ring-indigo-500 transition-all"
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Number of Trucks
-              </label>
-              <input
-                type="number"
-                min="0"
-                value={newOwner.totalTrucks}
-                onChange={(e) => setNewOwner({ ...newOwner, totalTrucks: Number(e.target.value) })}
-                className="w-full px-4 py-3 bg-gray-50 border-0 rounded-xl focus:ring-2 focus:ring-indigo-500 transition-all"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Number of Drivers
-              </label>
-              <input
-                type="number"
-                min="0"
-                value={newOwner.totalDrivers}
-                onChange={(e) => setNewOwner({ ...newOwner, totalDrivers: Number(e.target.value) })}
-                className="w-full px-4 py-3 bg-gray-50 border-0 rounded-xl focus:ring-2 focus:ring-indigo-500 transition-all"
-              />
-            </div>
-          </div>
-          {error && <p className="text-red-500 text-sm">{error}</p>}
-        </div>
-
-        <div className="p-6 border-t border-gray-100 flex justify-end gap-3">
-          <button
-            onClick={() => {
-              setShowAddModal(false);
-              setNewOwner({
-                name: '',
-                email: '',
-                phone: '',
-                company: '',
-                totalTrucks: 0,
-                totalDrivers: 0,
-              });
-              setError('');
-            }}
-            className="px-6 py-3 text-gray-700 hover:bg-gray-100 rounded-xl transition-colors font-medium"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={handleAddOwner}
-            disabled={!newOwner.name || !newOwner.email || !newOwner.phone || !newOwner.company}
-            className="px-6 py-3 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-xl hover:shadow-lg hover:shadow-indigo-500/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed font-medium"
-          >
-            Add Truck Owner
-          </button>
-        </div>
-      </Modal>
     </div>
   );
 }

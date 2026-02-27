@@ -1,30 +1,62 @@
-import { useState } from 'react';
-import { Search, Filter, Eye, Ban, CheckCircle } from 'lucide-react';
-import { mockUsers } from '../data/mockData';
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router';
+import { Search, Filter, Eye, Ban, CheckCircle, Loader2 } from 'lucide-react';
+import { apiService } from '../services/api';
 import type { User } from '../types';
 import StatusBadge from '../components/StatusBadge';
 
 export default function Users() {
-  const [users, setUsers] = useState<User[]>(mockUsers);
+  const navigate = useNavigate();
+  const [users, setUsers] = useState<User[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
 
+  const fetchUsers = async () => {
+    try {
+      setLoading(true);
+      const response = await apiService.getUsers();
+      setUsers(response.data);
+    } catch (error) {
+      console.error('Error fetching users:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchUsers();
+  }, []);
+
   const filteredUsers = users.filter((user) => {
-    const matchesSearch = 
+    const matchesSearch =
       user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
       user.phone.includes(searchTerm);
-    
+
     const matchesStatus = statusFilter === 'all' || user.status === statusFilter;
-    
+
     return matchesSearch && matchesStatus;
   });
 
-  const handleStatusChange = (userId: string, newStatus: User['status']) => {
-    setUsers(users.map(user => 
-      user.id === userId ? { ...user, status: newStatus } : user
-    ));
+  const handleStatusChange = async (userId: string, newStatus: User['status']) => {
+    try {
+      await apiService.updateUser(userId, { status: newStatus });
+      setUsers(users.map(user =>
+        user.id === userId ? { ...user, status: newStatus } : user
+      ));
+    } catch (error) {
+      console.error('Error updating status:', error);
+    }
   };
+
+  if (loading && users.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <Loader2 className="w-12 h-12 text-indigo-600 animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -48,7 +80,7 @@ export default function Users() {
               placeholder="Search by name, email, or phone..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
             />
           </div>
           <div className="relative">
@@ -56,7 +88,7 @@ export default function Users() {
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="pl-10 pr-8 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none bg-white"
+              className="pl-10 pr-8 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none bg-white transition-all"
             >
               <option value="all">All Status</option>
               <option value="active">Active</option>
@@ -85,39 +117,40 @@ export default function Users() {
             </thead>
             <tbody className="divide-y divide-gray-200">
               {filteredUsers.map((user) => (
-                <tr key={user.id} className="hover:bg-gray-50">
+                <tr key={user.id} className="hover:bg-gray-50 transition-colors">
                   <td className="px-6 py-4 text-sm font-medium text-gray-900">{user.id}</td>
-                  <td className="px-6 py-4 text-sm text-gray-900">{user.name}</td>
+                  <td className="px-6 py-4 text-sm text-gray-900 font-semibold">{user.name}</td>
                   <td className="px-6 py-4 text-sm text-gray-600">{user.email}</td>
                   <td className="px-6 py-4 text-sm text-gray-600">{user.phone}</td>
                   <td className="px-6 py-4 text-sm text-gray-600">
                     {new Date(user.joinedDate).toLocaleDateString()}
                   </td>
-                  <td className="px-6 py-4 text-sm text-gray-900">{user.totalBookings}</td>
+                  <td className="px-6 py-4 text-sm text-gray-900 text-center">{user.totalBookings}</td>
                   <td className="px-6 py-4">
                     <StatusBadge status={user.status} />
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-2">
-                      <button 
-                        className="text-blue-600 hover:text-blue-800"
+                      <button
+                        onClick={() => navigate(`/users/${user.id}`)}
+                        className="p-2 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all"
                         title="View Details"
                       >
                         <Eye className="w-5 h-5" />
                       </button>
                       {user.status === 'active' && (
-                        <button 
+                        <button
                           onClick={() => handleStatusChange(user.id, 'suspended')}
-                          className="text-red-600 hover:text-red-800"
+                          className="text-red-600 hover:text-red-800 transition-colors"
                           title="Suspend User"
                         >
                           <Ban className="w-5 h-5" />
                         </button>
                       )}
-                      {user.status === 'suspended' && (
-                        <button 
+                      {(user.status === 'suspended' || user.status === 'inactive') && (
+                        <button
                           onClick={() => handleStatusChange(user.id, 'active')}
-                          className="text-green-600 hover:text-green-800"
+                          className="text-green-600 hover:text-green-800 transition-colors"
                           title="Activate User"
                         >
                           <CheckCircle className="w-5 h-5" />
@@ -130,7 +163,7 @@ export default function Users() {
             </tbody>
           </table>
         </div>
-        {filteredUsers.length === 0 && (
+        {!loading && filteredUsers.length === 0 && (
           <div className="text-center py-12">
             <p className="text-gray-500">No users found matching your criteria</p>
           </div>

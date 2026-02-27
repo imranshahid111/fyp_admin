@@ -1,27 +1,57 @@
-import { useState } from 'react';
-import { Edit2, Save, X, Calculator, ShieldCheck } from 'lucide-react';
-import { mockFareStructures } from '../data/mockData';
+import { useState, useEffect } from 'react';
+import { Edit2, Save, X, Calculator, ShieldCheck, Loader2 } from 'lucide-react';
+import { apiService } from '../services/api';
 import type { FareStructure } from '../types';
 
 export default function Fares() {
-  const [fares, setFares] = useState<FareStructure[]>(mockFareStructures);
+  const [fares, setFares] = useState<FareStructure[]>([]);
+  const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<Partial<FareStructure>>({});
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      const res = await apiService.getFares();
+      setFares(res.data);
+    } catch (error) {
+      console.error('Error fetching fares:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleEdit = (fare: FareStructure) => {
     setEditingId(fare.id);
     setEditForm(fare);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (editingId && editForm) {
-      setFares(fares.map((fare: FareStructure) =>
-        fare.id === editingId ? { ...fare, ...editForm } as FareStructure : fare
-      ));
-      setEditingId(null);
-      setEditForm({});
+      try {
+        await apiService.updateFare(editingId, editForm);
+        setFares(fares.map((fare: FareStructure) =>
+          fare.id === editingId ? { ...fare, ...editForm } as FareStructure : fare
+        ));
+        setEditingId(null);
+        setEditForm({});
+      } catch (error) {
+        console.error('Error saving fare:', error);
+      }
     }
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="w-12 h-12 text-indigo-600 animate-spin" />
+      </div>
+    );
+  }
 
   const handleCancel = () => {
     setEditingId(null);

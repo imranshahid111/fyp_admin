@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Search,
   Filter,
@@ -8,16 +8,34 @@ import {
   XCircle,
   DollarSign,
   TrendingUp,
-  Clock
+  Clock,
+  Loader2
 } from 'lucide-react';
-import { mockPayments } from '../data/mockData';
+import { apiService } from '../services/api';
 import type { Payment } from '../types';
 import StatusBadge from '../components/StatusBadge';
 
 export default function Payments() {
-  const [payments, setPayments] = useState<Payment[]>(mockPayments);
+  const [payments, setPayments] = useState<Payment[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      const res = await apiService.getPayments();
+      setPayments(res.data);
+    } catch (error) {
+      console.error('Error fetching payments data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const filteredPayments = payments.filter((payment: Payment) => {
     const matchesSearch =
@@ -30,21 +48,39 @@ export default function Payments() {
     return matchesSearch && matchesStatus;
   });
 
-  const handleResolveDispute = (paymentId: string) => {
-    setPayments(payments.map((payment: Payment) =>
-      payment.id === paymentId
-        ? { ...payment, disputeStatus: 'resolved' as const }
-        : payment
-    ));
+  const handleResolveDispute = async (paymentId: string) => {
+    try {
+      await apiService.updatePayment(paymentId, { disputeStatus: 'resolved' });
+      setPayments(payments.map((payment: Payment) =>
+        payment.id === paymentId
+          ? { ...payment, disputeStatus: 'resolved' as const }
+          : payment
+      ));
+    } catch (error) {
+      console.error('Error resolving dispute:', error);
+    }
   };
 
-  const handleMarkCompleted = (paymentId: string) => {
-    setPayments(payments.map((payment: Payment) =>
-      payment.id === paymentId
-        ? { ...payment, status: 'completed' as const }
-        : payment
-    ));
+  const handleMarkCompleted = async (paymentId: string) => {
+    try {
+      await apiService.updatePayment(paymentId, { status: 'completed' });
+      setPayments(payments.map((payment: Payment) =>
+        payment.id === paymentId
+          ? { ...payment, status: 'completed' as const }
+          : payment
+      ));
+    } catch (error) {
+      console.error('Error marking payment as completed:', error);
+    }
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="w-12 h-12 text-indigo-600 animate-spin" />
+      </div>
+    );
+  }
 
   const totalAmount = payments.reduce((sum: number, p: Payment) => sum + p.amount, 0);
   const completedAmount = payments.filter((p: Payment) => p.status === 'completed').reduce((sum: number, p: Payment) => sum + p.amount, 0);

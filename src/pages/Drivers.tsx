@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router';
 import {
   Search,
   Filter,
@@ -10,15 +11,19 @@ import {
   Truck,
   CheckCircle,
   MapPin,
-  AlertCircle
+  AlertCircle,
+  Loader2
 } from 'lucide-react';
-import { mockDrivers, mockTruckOwners } from '../data/mockData';
+import { apiService } from '../services/api';
 import type { Driver, TruckOwner } from '../types';
 import StatusBadge from '../components/StatusBadge';
 import Modal from '../components/Modal';
 
 export default function Drivers() {
-  const [drivers, setDrivers] = useState<Driver[]>(mockDrivers);
+  const navigate = useNavigate();
+  const [drivers, setDrivers] = useState<Driver[]>([]);
+  const [truckOwners, setTruckOwners] = useState<TruckOwner[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [showAddModal, setShowAddModal] = useState(false);
@@ -29,6 +34,26 @@ export default function Drivers() {
     licenseNumber: '',
     truckOwnerId: '',
   });
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      const [driversRes, ownersRes] = await Promise.all([
+        apiService.getDrivers(),
+        apiService.getTruckOwners()
+      ]);
+      setDrivers(driversRes.data);
+      setTruckOwners(ownersRes.data);
+    } catch (error) {
+      console.error('Error fetching drivers data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const filteredDrivers = drivers.filter((driver: Driver) => {
     const matchesSearch =
@@ -41,43 +66,66 @@ export default function Drivers() {
     return matchesSearch && matchesStatus;
   });
 
-  const handleActivate = (driverId: string) => {
-    setDrivers(drivers.map((driver: Driver) =>
-      driver.id === driverId ? { ...driver, status: 'available' } : driver
-    ));
-  };
-
-  const handleDeactivate = (driverId: string) => {
-    setDrivers(drivers.map((driver: Driver) =>
-      driver.id === driverId ? { ...driver, status: 'inactive' } : driver
-    ));
-  };
-
-  const handleAddDriver = () => {
-    if (newDriver.name && newDriver.email && newDriver.phone && newDriver.licenseNumber && newDriver.truckOwnerId) {
-      const truckOwner = mockTruckOwners.find((o: TruckOwner) => o.id === newDriver.truckOwnerId);
-
-      const driver: Driver = {
-        id: `D${String(drivers.length + 1).padStart(3, '0')}`,
-        ...newDriver,
-        truckOwnerName: truckOwner?.company || '',
-        assignedJobs: 0,
-        completedJobs: 0,
-        status: 'available',
-        rating: 0,
-      };
-
-      setDrivers([driver, ...drivers]);
-      setNewDriver({
-        name: '',
-        email: '',
-        phone: '',
-        licenseNumber: '',
-        truckOwnerId: '',
-      });
-      setShowAddModal(false);
+  const handleActivate = async (driverId: string) => {
+    try {
+      await apiService.updateDriver(driverId, { status: 'available' });
+      setDrivers(drivers.map((driver: Driver) =>
+        driver.id === driverId ? { ...driver, status: 'available' } : driver
+      ));
+    } catch (error) {
+      console.error('Error activating driver:', error);
     }
   };
+
+  const handleDeactivate = async (driverId: string) => {
+    try {
+      await apiService.updateDriver(driverId, { status: 'inactive' });
+      setDrivers(drivers.map((driver: Driver) =>
+        driver.id === driverId ? { ...driver, status: 'inactive' } : driver
+      ));
+    } catch (error) {
+      console.error('Error deactivating driver:', error);
+    }
+  };
+
+  const handleAddDriver = async () => {
+    if (newDriver.name && newDriver.email && newDriver.phone && newDriver.licenseNumber && newDriver.truckOwnerId) {
+      try {
+        const truckOwner = truckOwners.find((o: TruckOwner) => o.id === newDriver.truckOwnerId);
+
+        const driverData = {
+          ...newDriver,
+          id: `D${Date.now().toString().slice(-3)}`, // Better than index-based ID for concurrent adds
+          truckOwnerName: truckOwner?.company || '',
+          assignedJobs: 0,
+          completedJobs: 0,
+          status: 'available' as const,
+          rating: 0,
+        };
+
+        const res = await apiService.createDriver(driverData);
+        setDrivers([res.data, ...drivers]);
+        setNewDriver({
+          name: '',
+          email: '',
+          phone: '',
+          licenseNumber: '',
+          truckOwnerId: '',
+        });
+        setShowAddModal(false);
+      } catch (error) {
+        console.error('Error adding driver:', error);
+      }
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="w-12 h-12 text-indigo-600 animate-spin" />
+      </div>
+    );
+  }
 
   const statCards = [
     {
@@ -230,7 +278,8 @@ export default function Drivers() {
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-2">
                       <button
-                        className="text-indigo-600 hover:text-indigo-800 p-2 hover:bg-indigo-50 rounded-lg transition-all"
+                        onClick={() => navigate(`/drivers/${driver.id}`)}
+                        className="p-2 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all"
                         title="View Details"
                       >
                         <Eye className="w-5 h-5" />
@@ -339,7 +388,7 @@ export default function Drivers() {
               className="w-full px-4 py-3 bg-gray-50 border-0 rounded-xl focus:ring-2 focus:ring-indigo-500 transition-all cursor-pointer"
             >
               <option value="">Select Truck Owner</option>
-              {mockTruckOwners.filter(o => o.status === 'approved').map((owner) => (
+              {truckOwners.filter(o => o.status === 'approved').map((owner) => (
                 <option key={owner.id} value={owner.id}>
                   {owner.company} - {owner.name}
                 </option>

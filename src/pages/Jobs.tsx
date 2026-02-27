@@ -1,14 +1,38 @@
-import { useState } from 'react';
-import { Search, Filter, Eye, UserPlus, MapPin, Star } from 'lucide-react';
-import { mockJobs, mockDrivers } from '../data/mockData';
-import type { Job } from '../types';
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router';
+import { Search, Filter, Eye, UserPlus, MapPin, Star, Loader2 } from 'lucide-react';
+import { apiService } from '../services/api';
+import type { Job, Driver } from '../types';
 import StatusBadge from '../components/StatusBadge';
 
 export default function Jobs() {
-  const [jobs, setJobs] = useState<Job[]>(mockJobs);
+  const navigate = useNavigate();
+  const [jobs, setJobs] = useState<Job[]>([]);
+  const [availableDrivers, setAvailableDrivers] = useState<Driver[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [selectedJob, setSelectedJob] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      const [jobsRes, driversRes] = await Promise.all([
+        apiService.getJobs(),
+        apiService.getDrivers()
+      ]);
+      setJobs(jobsRes.data);
+      setAvailableDrivers(driversRes.data.filter(d => d.status === 'available'));
+    } catch (error) {
+      console.error('Error fetching jobs data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const filteredJobs = jobs.filter((job) => {
     const matchesSearch =
@@ -22,23 +46,51 @@ export default function Jobs() {
     return matchesSearch && matchesStatus;
   });
 
-  const handleAssignDriver = (jobId: string, driverId: string) => {
-    const driver = mockDrivers.find(d => d.id === driverId);
+  const handleAssignDriver = async (jobId: string, driverId: string) => {
+    const driver = availableDrivers.find(d => d.id === driverId);
     if (driver) {
-      setJobs(jobs.map(job =>
-        job.id === jobId
-          ? { ...job, driverId, driverName: driver.name, status: 'assigned' as const }
-          : job
-      ));
-      setSelectedJob(null);
+      try {
+        await apiService.updateJob(jobId, {
+          driverId,
+          driverName: driver.name,
+          status: 'assigned'
+        });
+
+        // Also update driver status in backend
+        await apiService.updateDriver(driverId, { status: 'on-job' });
+
+        setJobs(jobs.map(job =>
+          job.id === jobId
+            ? { ...job, driverId, driverName: driver.name, status: 'assigned' as const }
+            : job
+        ));
+        setSelectedJob(null);
+        // Refresh available drivers
+        fetchData();
+      } catch (error) {
+        console.error('Error assigning driver:', error);
+      }
     }
   };
 
-  const handleUpdateStatus = (jobId: string, newStatus: Job['status']) => {
-    setJobs(jobs.map(job =>
-      job.id === jobId ? { ...job, status: newStatus } : job
-    ));
+  const handleUpdateStatus = async (jobId: string, newStatus: Job['status']) => {
+    try {
+      await apiService.updateJob(jobId, { status: newStatus });
+      setJobs(jobs.map(job =>
+        job.id === jobId ? { ...job, status: newStatus } : job
+      ));
+    } catch (error) {
+      console.error('Error updating job status:', error);
+    }
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="w-12 h-12 text-indigo-600 animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -139,7 +191,8 @@ export default function Jobs() {
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-2">
                       <button
-                        className="text-blue-600 hover:text-blue-800"
+                        onClick={() => navigate(`/jobs/${job.id}`)}
+                        className="p-2 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all"
                         title="View Details"
                       >
                         <Eye className="w-5 h-5" />
@@ -176,7 +229,7 @@ export default function Jobs() {
             </div>
             <div className="p-6">
               <div className="space-y-3">
-                {mockDrivers.filter(d => d.status === 'available').map((driver) => (
+                {availableDrivers.map((driver) => (
                   <div
                     key={driver.id}
                     className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-colors cursor-pointer"
@@ -196,7 +249,7 @@ export default function Jobs() {
                     </div>
                   </div>
                 ))}
-                {mockDrivers.filter(d => d.status === 'available').length === 0 && (
+                {availableDrivers.length === 0 && (
                   <div className="text-center py-8 text-gray-500">
                     No available drivers at the moment
                   </div>

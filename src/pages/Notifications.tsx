@@ -1,10 +1,11 @@
-import { useState } from 'react';
-import { Send, Plus, Eye, Trash2 } from 'lucide-react';
-import { mockNotifications } from '../data/mockData';
+import { useState, useEffect } from 'react';
+import { Send, Plus, Eye, Trash2, Loader2 } from 'lucide-react';
+import { apiService } from '../services/api';
 import type { Notification } from '../types';
 
 export default function Notifications() {
-  const [notifications, setNotifications] = useState<Notification[]>(mockNotifications);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newNotification, setNewNotification] = useState<Partial<Notification>>({
     title: '',
@@ -13,37 +14,74 @@ export default function Notifications() {
     status: 'draft',
   });
 
-  const handleCreate = () => {
-    if (newNotification.title && newNotification.message) {
-      const notification: Notification = {
-        id: `N${String(notifications.length + 1).padStart(3, '0')}`,
-        title: newNotification.title,
-        message: newNotification.message,
-        recipient: newNotification.recipient as Notification['recipient'],
-        createdDate: new Date().toISOString().split('T')[0],
-        status: 'draft',
-      };
-      
-      setNotifications([notification, ...notifications]);
-      setNewNotification({
-        title: '',
-        message: '',
-        recipient: 'all',
-        status: 'draft',
-      });
-      setShowCreateModal(false);
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      const res = await apiService.getNotifications();
+      setNotifications(res.data);
+    } catch (error) {
+      console.error('Error fetching notifications:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleSend = (id: string) => {
-    setNotifications(notifications.map(notif =>
-      notif.id === id ? { ...notif, status: 'sent' as const } : notif
-    ));
+  const handleCreate = async () => {
+    if (newNotification.title && newNotification.message) {
+      try {
+        const notificationData = {
+          ...newNotification,
+          id: `N${Date.now().toString().slice(-3)}`,
+          createdDate: new Date().toISOString().split('T')[0],
+          status: 'draft' as const,
+        };
+
+        const res = await apiService.createNotification(notificationData);
+        setNotifications([res.data, ...notifications]);
+        setNewNotification({
+          title: '',
+          message: '',
+          recipient: 'all',
+          status: 'draft',
+        });
+        setShowCreateModal(false);
+      } catch (error) {
+        console.error('Error creating notification:', error);
+      }
+    }
   };
 
-  const handleDelete = (id: string) => {
-    setNotifications(notifications.filter(notif => notif.id !== id));
+  const handleSend = async (id: string) => {
+    try {
+      await apiService.updateNotification(id, { status: 'sent' });
+      setNotifications(notifications.map(notif =>
+        notif.id === id ? { ...notif, status: 'sent' as const } : notif
+      ));
+    } catch (error) {
+      console.error('Error sending notification:', error);
+    }
   };
+
+  const handleDelete = async (id: string) => {
+    try {
+      await apiService.deleteNotification(id);
+      setNotifications(notifications.filter(notif => notif.id !== id));
+    } catch (error) {
+      console.error('Error deleting notification:', error);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="w-12 h-12 text-indigo-600 animate-spin" />
+      </div>
+    );
+  }
 
   const getRecipientBadge = (recipient: Notification['recipient']) => {
     const styles = {
@@ -52,7 +90,7 @@ export default function Notifications() {
       'truck-owners': 'bg-green-100 text-green-800',
       drivers: 'bg-orange-100 text-orange-800',
     };
-    
+
     return (
       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${styles[recipient]}`}>
         {recipient === 'all' ? 'All Users' : recipient === 'truck-owners' ? 'Truck Owners' : recipient.charAt(0).toUpperCase() + recipient.slice(1)}
@@ -157,7 +195,7 @@ export default function Notifications() {
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
               </div>
-              
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Message
@@ -170,7 +208,7 @@ export default function Notifications() {
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
               </div>
-              
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Recipients

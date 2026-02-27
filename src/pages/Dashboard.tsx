@@ -1,90 +1,123 @@
-import { 
-  Users, 
-  Truck, 
-  UserCog, 
-  Briefcase, 
-  DollarSign, 
+import { useState, useEffect } from 'react';
+import {
+  Users,
+  Truck,
+  UserCog,
+  Briefcase,
+  DollarSign,
   TrendingUp,
   Clock,
   CheckCircle,
   ArrowUp,
-  ArrowDown
+  ArrowDown,
+  Loader2
 } from 'lucide-react';
-import { mockDashboardStats, mockJobs } from '../data/mockData';
+import { apiService } from '../services/api';
+import { DashboardStats, Job } from '../types';
 import StatusBadge from '../components/StatusBadge';
 
 export default function Dashboard() {
-  const stats = mockDashboardStats;
-  const recentJobs = mockJobs.slice(0, 5);
+  const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [recentJobs, setRecentJobs] = useState<Job[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [statsRes, jobsRes] = await Promise.all([
+          apiService.getStats(),
+          apiService.getJobs()
+        ]);
+        setStats(statsRes.data);
+        setRecentJobs(jobsRes.data.slice(0, 5));
+      } catch (error) {
+        console.error('Error fetching dashboard data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <Loader2 className="w-12 h-12 text-indigo-600 animate-spin" />
+      </div>
+    );
+  }
+
+  if (!stats) return null;
 
   const statCards = [
-    { 
-      name: 'Total Users', 
-      value: stats.totalUsers, 
-      icon: Users, 
+    {
+      name: 'Total Users',
+      value: stats.totalUsers,
+      icon: Users,
       gradient: 'from-blue-500 to-cyan-600',
       change: '+12%',
       trend: 'up',
       iconColor: 'text-blue-50'
     },
-    { 
-      name: 'Truck Owners', 
-      value: stats.totalTruckOwners, 
-      icon: Truck, 
+    {
+      name: 'Truck Owners',
+      value: stats.totalTruckOwners,
+      icon: Truck,
       gradient: 'from-purple-500 to-pink-600',
       change: '+8%',
       trend: 'up',
       iconColor: 'text-purple-50'
     },
-    { 
-      name: 'Drivers', 
-      value: stats.totalDrivers, 
-      icon: UserCog, 
+    {
+      name: 'Drivers',
+      value: stats.totalDrivers,
+      icon: UserCog,
       gradient: 'from-green-500 to-emerald-600',
       change: '+15%',
       trend: 'up',
       iconColor: 'text-green-50'
     },
-    { 
-      name: 'Total Jobs', 
-      value: stats.totalJobs, 
-      icon: Briefcase, 
+    {
+      name: 'Total Jobs',
+      value: stats.totalJobs,
+      icon: Briefcase,
       gradient: 'from-orange-500 to-red-600',
       change: '+23%',
       trend: 'up',
       iconColor: 'text-orange-50'
     },
-    { 
-      name: 'Active Jobs', 
-      value: stats.activeJobs, 
-      icon: Clock, 
+    {
+      name: 'Active Jobs',
+      value: stats.activeJobs,
+      icon: Clock,
       gradient: 'from-yellow-500 to-orange-600',
       change: '+5%',
       trend: 'up',
       iconColor: 'text-yellow-50'
     },
-    { 
-      name: 'Completed Jobs', 
-      value: stats.completedJobs, 
-      icon: CheckCircle, 
+    {
+      name: 'Completed Jobs',
+      value: stats.completedJobs,
+      icon: CheckCircle,
       gradient: 'from-teal-500 to-cyan-600',
       change: '+18%',
       trend: 'up',
       iconColor: 'text-teal-50'
     },
-    { 
-      name: 'Total Revenue', 
-      value: `$${stats.totalRevenue.toLocaleString()}`, 
-      icon: DollarSign, 
+    {
+      name: 'Total Revenue',
+      value: `$${stats.totalRevenue.toLocaleString()}`,
+      icon: DollarSign,
       gradient: 'from-indigo-500 to-purple-600',
       change: '+32%',
       trend: 'up',
       iconColor: 'text-indigo-50'
     },
-    { 
-      name: 'Pending Payments', 
-      value: `$${stats.pendingPayments.toLocaleString()}`, 
-      icon: TrendingUp, 
+    {
+      name: 'Pending Payments',
+      value: `$${stats.pendingPayments.toLocaleString()}`,
+      icon: TrendingUp,
       gradient: 'from-red-500 to-pink-600',
       change: '-5%',
       trend: 'down',
@@ -107,17 +140,16 @@ export default function Dashboard() {
         {statCards.map((stat) => {
           const Icon = stat.icon;
           return (
-            <div 
-              key={stat.name} 
+            <div
+              key={stat.name}
               className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 hover:shadow-lg transition-all duration-300 group"
             >
               <div className="flex items-start justify-between mb-4">
                 <div className={`w-12 h-12 bg-gradient-to-br ${stat.gradient} rounded-xl flex items-center justify-center shadow-lg transform group-hover:scale-110 transition-transform duration-300`}>
                   <Icon className={`w-6 h-6 ${stat.iconColor}`} />
                 </div>
-                <div className={`flex items-center gap-1 px-2 py-1 rounded-lg ${
-                  stat.trend === 'up' ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'
-                }`}>
+                <div className={`flex items-center gap-1 px-2 py-1 rounded-lg ${stat.trend === 'up' ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'
+                  }`}>
                   {stat.trend === 'up' ? (
                     <ArrowUp className="w-3 h-3" />
                   ) : (
