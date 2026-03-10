@@ -19,7 +19,8 @@ export default function Login() {
 
         try {
             const res = await apiService.login({ email, password });
-            login(res.data.token, res.data.admin);
+            const { token, admin } = res.data.data;
+            login(token, admin);
             navigate('/');
         } catch (err: any) {
             setError(err.response?.data?.message || 'Login failed. Please check your credentials.');

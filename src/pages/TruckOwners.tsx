@@ -19,8 +19,8 @@ export default function TruckOwners() {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const res = await apiService.getTruckOwners();
-      setTruckOwners(res.data);
+      const res = await apiService.getTruckOwners(statusFilter);
+      setTruckOwners(res.data.data);
     } catch (error) {
       console.error('Error fetching truck owners:', error);
     } finally {
@@ -41,7 +41,7 @@ export default function TruckOwners() {
 
   const handleApprove = async (ownerId: string) => {
     try {
-      await apiService.updateTruckOwner(ownerId, { status: 'approved' });
+      await apiService.approveTruckOwner(ownerId);
       setTruckOwners(truckOwners.map((owner: TruckOwner) =>
         owner.id === ownerId ? { ...owner, status: 'approved' } : owner
       ));
@@ -52,7 +52,7 @@ export default function TruckOwners() {
 
   const handleReject = async (ownerId: string) => {
     try {
-      await apiService.updateTruckOwner(ownerId, { status: 'rejected' });
+      await apiService.rejectTruckOwner(ownerId);
       setTruckOwners(truckOwners.map((owner: TruckOwner) =>
         owner.id === ownerId ? { ...owner, status: 'rejected' } : owner
       ));
@@ -63,7 +63,7 @@ export default function TruckOwners() {
 
   const handleDeactivate = async (ownerId: string) => {
     try {
-      await apiService.updateTruckOwner(ownerId, { status: 'inactive' });
+      await apiService.suspendTruckOwner(ownerId);
       setTruckOwners(truckOwners.map((owner: TruckOwner) =>
         owner.id === ownerId ? { ...owner, status: 'inactive' } : owner
       ));

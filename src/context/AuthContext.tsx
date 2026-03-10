@@ -26,10 +26,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     useEffect(() => {
         const initAuth = async () => {
-            if (token) {
+                if (token) {
                 try {
                     const res = await apiService.getMe();
-                    setUser(res.data);
+                    setUser(res.data.data);
                 } catch (error) {
                     console.error('Auth initialization failed:', error);
                     logout();
