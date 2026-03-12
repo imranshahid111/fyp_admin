@@ -17,7 +17,7 @@ export interface TruckOwner {
   registrationDate: string;
   totalTrucks: number;
   totalDrivers: number;
-  status: 'pending' | 'approved' | 'rejected' | 'inactive';
+  status: 'pending' | 'approved' | 'rejected' | 'inactive' | 'suspended';
   rating: number;
 }
 

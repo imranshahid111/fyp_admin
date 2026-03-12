@@ -34,8 +34,10 @@ export default function UserDetails() {
                 apiService.getUser(id!),
                 apiService.getBookings()
             ]);
-            setUser(userRes.data);
-            setBookings(bookingsRes.data.filter((b: Booking) => b.userId === id));
+            const userData = userRes.data?.data ?? userRes.data;
+            const bookingsList = bookingsRes.data?.data ?? bookingsRes.data ?? [];
+            setUser(userData);
+            setBookings(bookingsList.filter((b: Booking) => b.userId === id));
         } catch (error) {
             console.error('Error fetching user details:', error);
         } finally {

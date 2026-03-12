@@ -17,6 +17,7 @@ import Bookings from './pages/Bookings';
 import Payments from './pages/Payments';
 import Notifications from './pages/Notifications';
 import Settings from './pages/Settings';
+import TruckCategories from './pages/TruckCategories';
 import NotFound from './pages/NotFound';
 import ProtectedRoute from './components/ProtectedRoute';
 
@@ -65,6 +66,7 @@ export const router = createBrowserRouter([
         ]
       },
       { path: 'fares', element: <Fares /> },
+      { path: 'categories', element: <TruckCategories /> },
       { path: 'bookings', element: <Bookings /> },
       { path: 'payments', element: <Payments /> },
       { path: 'notifications', element: <Notifications /> },

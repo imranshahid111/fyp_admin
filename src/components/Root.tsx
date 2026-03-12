@@ -11,7 +11,8 @@ import {
   Bell,
   Settings,
   Menu,
-  X
+  X,
+  Package
 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -19,6 +20,7 @@ const navigation = [
   { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
   { name: 'Users', path: '/users', icon: Users },
   { name: 'Truck Owners', path: '/truck-owners', icon: Truck },
+  { name: 'Truck Categories', path: '/categories', icon: Package },
   { name: 'Drivers', path: '/drivers', icon: UserCog },
   { name: 'Jobs', path: '/jobs', icon: Briefcase },
   { name: 'Fares', path: '/fares', icon: DollarSign },

@@ -36,9 +36,45 @@ export default function TruckOwnerDetails() {
                 apiService.getDrivers(),
                 apiService.getJobs()
             ]);
-            setOwner(ownerRes.data);
-            setDrivers(driversRes.data.filter((d: Driver) => d.truckOwnerId === id));
-            setJobs(jobsRes.data.filter((j: Job) => j.truckOwnerId === id));
+            const payload = ownerRes.data?.data ?? ownerRes.data;
+            const ownerData = payload?.owner ?? payload;
+            const mapDriver = (d: any): Driver => ({
+                id: String(d.id),
+                name: d.name ?? '',
+                email: d.email ?? '',
+                phone: d.phone ?? '',
+                licenseNumber: d.licenseNumber ?? d.licence_number ?? '',
+                truckOwnerId: String(d.truck_owner_id ?? d.truckOwnerId ?? ''),
+                truckOwnerName: d.truckOwnerName ?? d.truck_owner_name ?? '',
+                assignedJobs: d.assignedJobs ?? 0,
+                completedJobs: d.completedJobs ?? 0,
+                status: (d.status === 'active' ? 'available' : d.status === 'inactive' ? 'inactive' : d.status) as Driver['status'],
+                rating: d.rating ?? 0,
+            });
+            const driversFromPayload = Array.isArray(payload?.drivers) ? payload.drivers.map(mapDriver) : [];
+            const driversList = (driversRes.data?.data ?? driversRes.data ?? []).map(mapDriver);
+            const driversForOwner = driversFromPayload.length > 0 ? driversFromPayload : driversList.filter((d: Driver) => String(d.truckOwnerId) === id);
+            const jobsList = Array.isArray(jobsRes.data) ? jobsRes.data : jobsRes.data?.data ?? [];
+            const trucksFromPayload = Array.isArray(payload?.trucks) ? payload.trucks : [];
+            if (ownerData) {
+                const mapped: TruckOwner = {
+                    id: String(ownerData.id),
+                    name: ownerData.name ?? '',
+                    email: ownerData.email ?? '',
+                    phone: ownerData.phone ?? '',
+                    company: ownerData.company ?? ownerData.business_name ?? '',
+                    registrationDate: ownerData.registrationDate ?? ownerData.created_at ?? new Date().toISOString().split('T')[0],
+                    totalTrucks: ownerData.totalTrucks ?? trucksFromPayload.length ?? 0,
+                    totalDrivers: ownerData.totalDrivers ?? driversForOwner.length ?? 0,
+                    status: ownerData.status ?? 'pending',
+                    rating: ownerData.rating ?? 0,
+                };
+                setOwner(mapped);
+            } else {
+                setOwner(null);
+            }
+            setDrivers(driversForOwner);
+            setJobs(jobsList.filter((j: Job) => String(j.truckOwnerId) === id));
         } catch (error) {
             console.error('Error fetching owner details:', error);
         } finally {
@@ -49,8 +85,15 @@ export default function TruckOwnerDetails() {
     const handleUpdateStatus = async (newStatus: TruckOwner['status']) => {
         if (!owner) return;
         try {
-            await apiService.updateTruckOwner(owner.id, { status: newStatus });
-            setOwner({ ...owner, status: newStatus });
+            const ownerId = String(owner.id);
+            if (newStatus === 'approved') {
+                await apiService.approveTruckOwner(ownerId);
+            } else if (newStatus === 'rejected') {
+                await apiService.rejectTruckOwner(ownerId);
+            } else if (newStatus === 'inactive' || newStatus === 'suspended') {
+                await apiService.suspendTruckOwner(ownerId);
+            }
+            setOwner({ ...owner, status: newStatus === 'suspended' ? 'suspended' : newStatus });
         } catch (error) {
             console.error('Error updating status:', error);
         }

@@ -25,8 +25,10 @@ export default function Jobs() {
         apiService.getJobs(),
         apiService.getDrivers()
       ]);
-      setJobs(jobsRes.data);
-      setAvailableDrivers(driversRes.data.filter(d => d.status === 'available'));
+      const jobsList = Array.isArray(jobsRes.data) ? jobsRes.data : jobsRes.data?.data ?? [];
+      const driversList = driversRes.data?.data ?? driversRes.data ?? [];
+      setJobs(jobsList);
+      setAvailableDrivers(driversList.filter((d: Driver) => d.status === 'available'));
     } catch (error) {
       console.error('Error fetching jobs data:', error);
     } finally {

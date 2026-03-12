@@ -30,7 +30,7 @@ export default function JobDetails() {
         try {
             setLoading(true);
             const res = await apiService.getJob(id!);
-            setJob(res.data);
+            setJob(res.data?.data ?? res.data);
         } catch (error) {
             console.error('Error fetching job details:', error);
         } finally {

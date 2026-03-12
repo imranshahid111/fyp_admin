@@ -17,7 +17,7 @@ export default function Bookings() {
     try {
       setLoading(true);
       const res = await apiService.getBookings();
-      setBookings(res.data);
+      setBookings(res.data?.data ?? res.data ?? []);
     } catch (error) {
       console.error('Error fetching bookings:', error);
     } finally {

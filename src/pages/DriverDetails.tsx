@@ -42,16 +42,36 @@ export default function DriverDetails() {
     const fetchDriverData = async () => {
         setLoading(true);
         try {
-            const [driverRes, ownersRes, jobsRes] = await Promise.all([
-                apiService.getDriver(id),
+            const [ownersRes, jobsRes] = await Promise.all([
                 apiService.getTruckOwners(),
                 apiService.getJobs(),
             ]);
+            const ownersList = ownersRes.data?.data ?? ownersRes.data ?? [];
+            const jobsList = Array.isArray(jobsRes.data) ? jobsRes.data : jobsRes.data?.data ?? [];
 
-            const driverData = driverRes.data;
-            setDriver(driverData);
-            setOwner(ownersRes.data.find((o: TruckOwner) => o.id === driverData.truckOwnerId) ?? null);
-            setJobs(jobsRes.data.filter((j: Job) => j.driverId === id));
+            let driverPayload: any = null;
+            try {
+                const driverRes = await apiService.getDriver(id);
+                driverPayload = driverRes.data?.data ?? driverRes.data;
+            } catch {
+                const driversRes = await apiService.getDrivers();
+                const driversList = driversRes.data?.data ?? driversRes.data ?? [];
+                driverPayload = driversList.find((d: any) => String(d.id) === id) ?? null;
+            }
+
+            if (driverPayload) {
+                const driverData = {
+                    ...driverPayload,
+                    id: String(driverPayload.id),
+                    licenseNumber: driverPayload.licenseNumber ?? driverPayload.licence_number ?? '',
+                    truckOwnerName: driverPayload.truckOwnerName ?? driverPayload.truck_owner_name ?? '',
+                    truckOwnerId: String(driverPayload.truckOwnerId ?? driverPayload.truck_owner_id ?? ''),
+                };
+                setDriver(driverData);
+                const ownerId = String(driverPayload.truckOwnerId ?? driverPayload.truck_owner_id ?? '');
+                setOwner(ownersList.find((o: TruckOwner) => String(o.id) === ownerId) ?? null);
+            }
+            setJobs(jobsList.filter((j: Job) => String(j.driverId) === id));
         } catch (err) {
             console.error('Failed to load driver data:', err);
         } finally {

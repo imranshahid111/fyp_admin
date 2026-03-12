@@ -16,6 +16,7 @@ export default function StatusBadge({ status, type = 'default' }: StatusBadgePro
         case 'rejected':
           return 'bg-red-100 text-red-800';
         case 'inactive':
+        case 'suspended':
           return 'bg-gray-100 text-gray-800';
         default:
           return 'bg-gray-100 text-gray-800';

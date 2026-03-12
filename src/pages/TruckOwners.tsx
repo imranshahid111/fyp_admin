@@ -16,11 +16,25 @@ export default function TruckOwners() {
     fetchData();
   }, []);
 
+  const mapOwner = (o: any): TruckOwner => ({
+    id: String(o.id),
+    name: o.name ?? '',
+    email: o.email ?? '',
+    phone: o.phone ?? '',
+    company: o.company ?? o.business_name ?? '',
+    registrationDate: o.registrationDate ?? o.created_at ?? '',
+    totalTrucks: o.totalTrucks ?? 0,
+    totalDrivers: o.totalDrivers ?? 0,
+    status: o.status ?? 'pending',
+    rating: o.rating ?? 0,
+  });
+
   const fetchData = async () => {
     try {
       setLoading(true);
       const res = await apiService.getTruckOwners(statusFilter);
-      setTruckOwners(res.data.data);
+      const raw = res.data?.data ?? res.data ?? [];
+      setTruckOwners(Array.isArray(raw) ? raw.map(mapOwner) : []);
     } catch (error) {
       console.error('Error fetching truck owners:', error);
     } finally {
@@ -29,10 +43,11 @@ export default function TruckOwners() {
   };
 
   const filteredTruckOwners = truckOwners.filter((owner: TruckOwner) => {
+    const company = owner.company || '';
     const matchesSearch =
       owner.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       owner.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      owner.company.toLowerCase().includes(searchTerm.toLowerCase());
+      company.toLowerCase().includes(searchTerm.toLowerCase());
 
     const matchesStatus = statusFilter === 'all' || owner.status === statusFilter;
 
@@ -41,9 +56,9 @@ export default function TruckOwners() {
 
   const handleApprove = async (ownerId: string) => {
     try {
-      await apiService.approveTruckOwner(ownerId);
+      await apiService.approveTruckOwner(String(ownerId));
       setTruckOwners(truckOwners.map((owner: TruckOwner) =>
-        owner.id === ownerId ? { ...owner, status: 'approved' } : owner
+        String(owner.id) === String(ownerId) ? { ...owner, status: 'approved' } : owner
       ));
     } catch (error) {
       console.error('Error approving truck owner:', error);
@@ -52,9 +67,9 @@ export default function TruckOwners() {
 
   const handleReject = async (ownerId: string) => {
     try {
-      await apiService.rejectTruckOwner(ownerId);
+      await apiService.rejectTruckOwner(String(ownerId));
       setTruckOwners(truckOwners.map((owner: TruckOwner) =>
-        owner.id === ownerId ? { ...owner, status: 'rejected' } : owner
+        String(owner.id) === String(ownerId) ? { ...owner, status: 'rejected' } : owner
       ));
     } catch (error) {
       console.error('Error rejecting truck owner:', error);
@@ -63,9 +78,9 @@ export default function TruckOwners() {
 
   const handleDeactivate = async (ownerId: string) => {
     try {
-      await apiService.suspendTruckOwner(ownerId);
+      await apiService.suspendTruckOwner(String(ownerId));
       setTruckOwners(truckOwners.map((owner: TruckOwner) =>
-        owner.id === ownerId ? { ...owner, status: 'inactive' } : owner
+        String(owner.id) === String(ownerId) ? { ...owner, status: 'suspended' } : owner
       ));
     } catch (error) {
       console.error('Error deactivating truck owner:', error);

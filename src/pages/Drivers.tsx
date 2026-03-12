@@ -39,6 +39,24 @@ export default function Drivers() {
     fetchData();
   }, []);
 
+  const mapDriver = (d: any, ownersList: TruckOwner[] = []): Driver => {
+    const ownerId = String(d.truck_owner_id ?? d.truckOwnerId ?? '');
+    const owner = ownersList.find((o: TruckOwner) => String(o.id) === ownerId);
+    return {
+      id: String(d.id),
+      name: d.name ?? '',
+      email: d.email ?? '',
+      phone: d.phone ?? '',
+      licenseNumber: d.licenseNumber ?? d.licence_number ?? '',
+      truckOwnerId: ownerId,
+      truckOwnerName: d.truckOwnerName ?? d.truck_owner_name ?? owner?.company ?? owner?.name ?? '',
+      assignedJobs: d.assignedJobs ?? 0,
+      completedJobs: d.completedJobs ?? 0,
+      status: (d.status === 'active' ? 'available' : d.status === 'inactive' ? 'inactive' : d.status) as Driver['status'],
+      rating: d.rating ?? 0,
+    };
+  };
+
   const fetchData = async () => {
     try {
       setLoading(true);
@@ -46,8 +64,10 @@ export default function Drivers() {
         apiService.getDrivers(),
         apiService.getTruckOwners()
       ]);
-      setDrivers(driversRes.data);
-      setTruckOwners(ownersRes.data);
+      const ownersList = ownersRes.data?.data ?? ownersRes.data ?? [];
+      setTruckOwners(ownersList);
+      const rawDrivers = driversRes.data?.data ?? driversRes.data ?? [];
+      setDrivers(Array.isArray(rawDrivers) ? rawDrivers.map((d: any) => mapDriver(d, ownersList)) : []);
     } catch (error) {
       console.error('Error fetching drivers data:', error);
     } finally {
@@ -104,7 +124,8 @@ export default function Drivers() {
         };
 
         const res = await apiService.createDriver(driverData);
-        setDrivers([res.data, ...drivers]);
+        const created = res.data?.data ?? res.data;
+        setDrivers(created ? [created, ...drivers] : drivers);
         setNewDriver({
           name: '',
           email: '',

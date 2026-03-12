@@ -58,6 +58,8 @@ export const apiService = {
     }),
   getTruckOwner: (id: string) =>
     api.get<{ success: boolean; data: any }>(`/admin/truck-owners/${id}`),
+  createTruckOwner: (payload: Partial<TruckOwner> & { name: string; email: string; phone: string; company?: string }) =>
+    api.post<{ success: boolean; data: any }>('/admin/truck-owners', payload),
   approveTruckOwner: (id: string) =>
     api.patch<{ success: boolean; data: any }>(`/admin/truck-owners/${id}/approve`),
   rejectTruckOwner: (id: string) =>
@@ -65,8 +67,14 @@ export const apiService = {
   suspendTruckOwner: (id: string) =>
     api.patch<{ success: boolean; data: any }>(`/admin/truck-owners/${id}/suspend`),
 
-  // Drivers (new admin endpoint list)
+  // Drivers (new admin endpoints)
   getDrivers: () => api.get<{ success: boolean; data: Driver[] }>('/admin/drivers'),
+  getDriver: (id: string) =>
+    api.get<{ success: boolean; data: Driver }>(`/admin/drivers/${id}`),
+  createDriver: (payload: Partial<Driver> & { name: string; email: string; phone: string; licenseNumber: string; truckOwnerId: string }) =>
+    api.post<{ success: boolean; data: Driver }>('/admin/drivers', payload),
+  updateDriver: (id: string, payload: Partial<Pick<Driver, 'status'>>) =>
+    api.patch<{ success: boolean; data: Driver }>(`/admin/drivers/${id}`, payload),
 
   // Jobs (legacy)
   getJobs: () => api.get<Job[]>('/jobs'),
