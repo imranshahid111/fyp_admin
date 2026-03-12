@@ -32,14 +32,17 @@ export default function UserDetails() {
             setLoading(true);
             const [userRes, bookingsRes] = await Promise.all([
                 apiService.getUser(id!),
-                apiService.getBookings()
+                apiService.getBookings().catch(() => ({ data: [] }))
             ]);
-            const userData = userRes.data?.data ?? userRes.data;
-            const bookingsList = bookingsRes.data?.data ?? bookingsRes.data ?? [];
-            setUser(userData);
-            setBookings(bookingsList.filter((b: Booking) => b.userId === id));
+            const userData = userRes?.data?.data ?? userRes?.data;
+            const bookingsRaw = bookingsRes?.data?.data ?? bookingsRes?.data;
+            const bookingsList = Array.isArray(bookingsRaw) ? bookingsRaw : [];
+            setUser(userData ?? null);
+            setBookings(bookingsList.filter((b: Booking & { userId?: string }) => String(b?.userId ?? b?.user_id) === id));
         } catch (error) {
             console.error('Error fetching user details:', error);
+            setUser(null);
+            setBookings([]);
         } finally {
             setLoading(false);
         }
@@ -170,7 +173,7 @@ export default function UserDetails() {
                                     <div className="flex items-center gap-3 bg-slate-50 p-3 rounded-2xl border border-slate-100/50">
                                         <Calendar className="w-4 h-4 text-slate-400" />
                                         <p className="text-slate-900 font-bold text-sm truncate">
-                                            {new Date(user.joinedDate).toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' })}
+                                            {user.joinedDate ? new Date(user.joinedDate).toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' }) : '—'}
                                         </p>
                                     </div>
                                 </div>
@@ -194,7 +197,7 @@ export default function UserDetails() {
                             <CardContent className="p-8 flex items-center justify-between">
                                 <div>
                                     <p className="text-slate-500 font-bold uppercase text-[10px] tracking-widest mb-1">Total Bookings</p>
-                                    <p className="text-4xl font-black text-slate-900">{user.totalBookings}</p>
+                                    <p className="text-4xl font-black text-slate-900">{user.totalBookings ?? 0}</p>
                                 </div>
                                 <div className="p-4 bg-indigo-50 rounded-2xl group-hover:scale-110 transition-transform">
                                     <ShoppingBag className="w-8 h-8 text-indigo-600" />
@@ -243,27 +246,27 @@ export default function UserDetails() {
                                             <TableRow
                                                 key={booking.id}
                                                 className="hover:bg-slate-50 transition-colors group cursor-pointer"
-                                                onClick={() => navigate(`/jobs/${booking.id}`)}
+                                                onClick={() => navigate(`/jobs/${booking.jobId ?? booking.job_id ?? booking.id}`)}
                                             >
                                                 <TableCell className="px-8 py-5">
                                                     <div className="flex flex-col">
                                                         <span className="font-bold text-slate-900 text-sm">
-                                                            {new Date(booking.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                                                            {booking.date ? new Date(booking.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : '—'}
                                                         </span>
-                                                        <span className="text-[10px] text-slate-400 font-bold uppercase mt-0.5">#{booking.id}</span>
+                                                        <span className="text-[10px] text-slate-400 font-bold uppercase mt-0.5">#{booking.id ?? booking.booking_id ?? '—'}</span>
                                                     </div>
                                                 </TableCell>
                                                 <TableCell className="px-8 py-5">
                                                     <div className="flex items-center gap-2 text-slate-700 font-semibold group-hover:text-indigo-600 transition-colors">
                                                         <MapPin className="w-4 h-4 text-slate-300" />
-                                                        {booking.route}
+                                                        {booking.route ?? '—'}
                                                     </div>
                                                 </TableCell>
                                                 <TableCell className="px-8 py-5">
-                                                    <span className="font-black text-slate-900 text-lg">${booking.fare}</span>
+                                                    <span className="font-black text-slate-900 text-lg">${Number(booking.fare ?? 0).toLocaleString()}</span>
                                                 </TableCell>
                                                 <TableCell className="px-8 py-5 text-right">
-                                                    <StatusBadge status={booking.status} type="job" />
+                                                    <StatusBadge status={(booking.status as string) ?? 'completed'} type="job" />
                                                 </TableCell>
                                             </TableRow>
                                         ))

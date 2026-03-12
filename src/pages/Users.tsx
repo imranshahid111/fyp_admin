@@ -16,9 +16,11 @@ export default function Users() {
     try {
       setLoading(true);
       const response = await apiService.getUsers();
-      setUsers(response.data);
+      const data = response?.data;
+      setUsers(Array.isArray(data) ? data : (data?.data ?? []));
     } catch (error) {
       console.error('Error fetching users:', error);
+      setUsers([]);
     } finally {
       setLoading(false);
     }
@@ -28,13 +30,16 @@ export default function Users() {
     fetchUsers();
   }, []);
 
-  const filteredUsers = users.filter((user) => {
+  const filteredUsers = (Array.isArray(users) ? users : []).filter((user) => {
+    const name = user?.name ?? '';
+    const email = user?.email ?? '';
+    const phone = user?.phone ?? '';
     const matchesSearch =
-      user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.phone.includes(searchTerm);
+      name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      phone.includes(searchTerm);
 
-    const matchesStatus = statusFilter === 'all' || user.status === statusFilter;
+    const matchesStatus = statusFilter === 'all' || (user?.status ?? '') === statusFilter;
 
     return matchesSearch && matchesStatus;
   });
@@ -119,15 +124,15 @@ export default function Users() {
               {filteredUsers.map((user) => (
                 <tr key={user.id} className="hover:bg-gray-50 transition-colors">
                   <td className="px-6 py-4 text-sm font-medium text-gray-900">{user.id}</td>
-                  <td className="px-6 py-4 text-sm text-gray-900 font-semibold">{user.name}</td>
-                  <td className="px-6 py-4 text-sm text-gray-600">{user.email}</td>
-                  <td className="px-6 py-4 text-sm text-gray-600">{user.phone}</td>
+                  <td className="px-6 py-4 text-sm text-gray-900 font-semibold">{user.name ?? '—'}</td>
+                  <td className="px-6 py-4 text-sm text-gray-600">{user.email ?? '—'}</td>
+                  <td className="px-6 py-4 text-sm text-gray-600">{user.phone ?? '—'}</td>
                   <td className="px-6 py-4 text-sm text-gray-600">
-                    {new Date(user.joinedDate).toLocaleDateString()}
+                    {user.joinedDate ? new Date(user.joinedDate).toLocaleDateString() : '—'}
                   </td>
-                  <td className="px-6 py-4 text-sm text-gray-900 text-center">{user.totalBookings}</td>
+                  <td className="px-6 py-4 text-sm text-gray-900 text-center">{user.totalBookings ?? 0}</td>
                   <td className="px-6 py-4">
-                    <StatusBadge status={user.status} />
+                    <StatusBadge status={(user.status as User['status']) ?? 'active'} />
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-2">
