@@ -27,7 +27,7 @@ const navigation = [
   { name: 'Bookings', path: '/bookings', icon: Calendar },
   { name: 'Payments', path: '/payments', icon: CreditCard },
   { name: 'Notifications', path: '/notifications', icon: Bell },
-  { name: 'Settings', path: '/settings', icon: Settings },
+  // { name: 'Settings', path: '/settings', icon: Settings },
 ];
 
 export default function Root() {
