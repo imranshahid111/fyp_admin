@@ -12,7 +12,8 @@ import {
   CheckCircle,
   MapPin,
   AlertCircle,
-  Loader2
+  Loader2,
+  Database
 } from 'lucide-react';
 import { apiService } from '../services/api';
 import type { Driver, TruckOwner } from '../types';
@@ -27,11 +28,15 @@ export default function Drivers() {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [showAddModal, setShowAddModal] = useState(false);
+  const [ownersError, setOwnersError] = useState('');
+  const [seeding, setSeeding] = useState(false);
   const [newDriver, setNewDriver] = useState({
     name: '',
     email: '',
     phone: '',
     licenseNumber: '',
+    cnic: '',
+    password: '',
     truckOwnerId: '',
   });
 
@@ -57,6 +62,19 @@ export default function Drivers() {
     };
   };
 
+  const mapOwner = (o: any): TruckOwner => ({
+    id: String(o.id),
+    name: o.name ?? '',
+    email: o.email ?? '',
+    phone: o.phone ?? '',
+    company: o.business_name ?? o.company ?? '',
+    registrationDate: o.registrationDate ?? o.created_at ?? '',
+    totalTrucks: o.totalTrucks ?? 0,
+    totalDrivers: o.totalDrivers ?? 0,
+    status: o.status ?? 'pending',
+    rating: o.rating ?? 0,
+  });
+
   const fetchData = async () => {
     try {
       setLoading(true);
@@ -64,12 +82,35 @@ export default function Drivers() {
         apiService.getDrivers(),
         apiService.getTruckOwners()
       ]);
-      const ownersList = ownersRes.data?.data ?? ownersRes.data ?? [];
+      
+      // Extract owners
+      let ownersList: TruckOwner[] = [];
+      const ownersData = ownersRes.data;
+      if (ownersData && ownersData.success && Array.isArray(ownersData.data)) {
+        ownersList = ownersData.data.map(mapOwner);
+      } else if (Array.isArray(ownersData)) {
+        ownersList = ownersData.map(mapOwner);
+      }
       setTruckOwners(ownersList);
-      const rawDrivers = driversRes.data?.data ?? driversRes.data ?? [];
-      setDrivers(Array.isArray(rawDrivers) ? rawDrivers.map((d: any) => mapDriver(d, ownersList)) : []);
+      if (ownersList.length === 0) {
+        setOwnersError('No truck owners found. Add truck owners first before adding drivers.');
+      } else {
+        setOwnersError('');
+      }
+      
+      // Extract drivers
+      let rawDrivers: any[] = [];
+      const driversData = driversRes.data;
+      if (driversData && driversData.success && Array.isArray(driversData.data)) {
+        rawDrivers = driversData.data;
+      } else if (Array.isArray(driversData)) {
+        rawDrivers = driversData;
+      }
+      
+      setDrivers(rawDrivers.map((d: any) => mapDriver(d, ownersList)));
     } catch (error) {
-      console.error('Error fetching drivers data:', error);
+      console.error('Error fetching data:', error);
+      setOwnersError('Failed to load truck owners. Check if the server is running.');
     } finally {
       setLoading(false);
     }
@@ -119,7 +160,7 @@ export default function Drivers() {
           truckOwnerName: truckOwner?.company || '',
           assignedJobs: 0,
           completedJobs: 0,
-          status: 'available' as const,
+          status: 'active' as const,
           rating: 0,
         };
 
@@ -131,6 +172,8 @@ export default function Drivers() {
           email: '',
           phone: '',
           licenseNumber: '',
+          cnic: '',
+          password: '',
           truckOwnerId: '',
         });
         setShowAddModal(false);
@@ -191,13 +234,37 @@ export default function Drivers() {
           </h1>
           <p className="text-gray-600 mt-2">View and manage all drivers on the platform</p>
         </div>
-        <button
-          onClick={() => setShowAddModal(true)}
-          className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-xl hover:shadow-lg hover:shadow-indigo-500/30 transition-all duration-200"
-        >
-          <Plus className="w-5 h-5" />
-          Add Driver
-        </button>
+        <div className="flex gap-3">
+          <button
+            onClick={async () => {
+              setSeeding(true);
+              try {
+                const res = await fetch('http://localhost:5001/api/admin/seed-truck-owners', { method: 'POST' });
+                const data = await res.json();
+                if (data.success) {
+                  fetchData();
+                }
+                alert(data.message || 'Done');
+              } catch (err) {
+                alert('Failed to seed: ' + (err as Error).message);
+              } finally {
+                setSeeding(false);
+              }
+            }}
+            disabled={seeding}
+            className="flex items-center gap-2 px-4 py-3 bg-amber-50 text-amber-700 border border-amber-200 rounded-xl hover:bg-amber-100 transition-all disabled:opacity-50"
+          >
+            <Database className="w-4 h-4" />
+            {seeding ? 'Seeding...' : 'Seed Sample Data'}
+          </button>
+          <button
+            onClick={() => setShowAddModal(true)}
+            className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-xl hover:shadow-lg hover:shadow-indigo-500/30 transition-all duration-200"
+          >
+            <Plus className="w-5 h-5" />
+            Add Driver
+          </button>
+        </div>
       </div>
 
       {/* Stats Cards */}
@@ -290,7 +357,7 @@ export default function Drivers() {
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-1">
                       <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
-                      <span className="text-sm font-medium text-gray-900">{driver.rating.toFixed(1)}</span>
+                      <span className="text-sm font-medium text-gray-900">{(driver.rating ?? 0).toFixed(1)}</span>
                     </div>
                   </td>
                   <td className="px-6 py-4">
@@ -344,7 +411,7 @@ export default function Drivers() {
         title="Add New Driver"
         size="md"
       >
-        <div className="p-6 space-y-5">
+        <div className="p-6 space-y-5 max-h-[60vh] overflow-y-auto">
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-2">
               Full Name *
@@ -401,21 +468,54 @@ export default function Drivers() {
 
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-2">
+              CNIC *
+            </label>
+            <input
+              type="text"
+              value={newDriver.cnic}
+              onChange={(e) => setNewDriver({ ...newDriver, cnic: e.target.value })}
+              placeholder="42101-1234567-1"
+              className="w-full px-4 py-3 bg-gray-50 border-0 rounded-xl focus:ring-2 focus:ring-indigo-500 transition-all"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">
+              Password *
+            </label>
+            <input
+              type="password"
+              value={newDriver.password}
+              onChange={(e) => setNewDriver({ ...newDriver, password: e.target.value })}
+              placeholder="Set password"
+              className="w-full px-4 py-3 bg-gray-50 border-0 rounded-xl focus:ring-2 focus:ring-indigo-500 transition-all"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">
               Truck Owner *
             </label>
+            {ownersError ? (
+              <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-sm text-amber-700 flex items-start gap-2">
+                <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
+                <span>{ownersError}</span>
+              </div>
+            ) : null}
             <select
               value={newDriver.truckOwnerId}
               onChange={(e) => setNewDriver({ ...newDriver, truckOwnerId: e.target.value })}
               className="w-full px-4 py-3 bg-gray-50 border-0 rounded-xl focus:ring-2 focus:ring-indigo-500 transition-all cursor-pointer"
             >
               <option value="">Select Truck Owner</option>
-              {truckOwners.filter(o => o.status === 'approved').map((owner) => (
+              {truckOwners.map((owner) => (
                 <option key={owner.id} value={owner.id}>
-                  {owner.company} - {owner.name}
+                  {owner.company || 'No Company'} ({owner.name}) - {owner.status.toUpperCase()}
                 </option>
               ))}
             </select>
           </div>
+          <div className="pb-10" />
         </div>
 
         <div className="p-6 border-t border-gray-100 flex justify-end gap-3">
@@ -427,6 +527,8 @@ export default function Drivers() {
                 email: '',
                 phone: '',
                 licenseNumber: '',
+                cnic: '',
+                password: '',
                 truckOwnerId: '',
               });
             }}
@@ -436,7 +538,7 @@ export default function Drivers() {
           </button>
           <button
             onClick={handleAddDriver}
-            disabled={!newDriver.name || !newDriver.email || !newDriver.phone || !newDriver.licenseNumber || !newDriver.truckOwnerId}
+            disabled={!newDriver.name || !newDriver.email || !newDriver.phone || !newDriver.password || !newDriver.licenseNumber || !newDriver.cnic || !newDriver.truckOwnerId}
             className="px-6 py-3 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-xl hover:shadow-lg hover:shadow-indigo-500/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed font-medium"
           >
             Add Driver

@@ -17,8 +17,15 @@ export default function TruckCategories() {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editForm, setEditForm] = useState<Partial<TruckCategory>>({});
   const [showAdd, setShowAdd] = useState(false);
-  const [newCat, setNewCat] = useState({ name: '', description: '', max_weight_kg: '' });
+  const [newCat, setNewCat] = useState({ name: '', description: '', max_weight_kg: '', icon: '' });
   const [saving, setSaving] = useState(false);
+
+  const availableIcons = [
+    { id: 'pickup', name: 'Pickup', path: '/icons/pickup.png' },
+    { id: 'shehzore', name: 'Shehzore', path: '/icons/shehzore.png' },
+    { id: 'mazda', name: 'Mazda', path: '/icons/mazda.png' },
+    { id: 'mini_mazda', name: 'Mini Mazda', path: '/icons/mini_mazda.png' },
+  ];
 
   const fetchData = async () => {
     try {
@@ -45,6 +52,7 @@ export default function TruckCategories() {
       await apiService.updateCategory(String(editingId), {
         name: editForm.name,
         description: editForm.description,
+        icon: editForm.icon,
         max_weight_kg: editForm.max_weight_kg ? Number(editForm.max_weight_kg) : undefined,
       });
       setCategories(categories.map((c) => (c.id === editingId ? { ...c, ...editForm } : c)));
@@ -64,12 +72,13 @@ export default function TruckCategories() {
       const res = await apiService.createCategory({
         name: newCat.name.trim(),
         description: newCat.description.trim() || undefined,
+        icon: newCat.icon || undefined,
         max_weight_kg: newCat.max_weight_kg ? Number(newCat.max_weight_kg) : undefined,
       });
       const created = res?.data?.data ?? res?.data;
       if (created) setCategories([created, ...categories]);
       setShowAdd(false);
-      setNewCat({ name: '', description: '', max_weight_kg: '' });
+      setNewCat({ name: '', description: '', max_weight_kg: '', icon: '' });
     } catch (error) {
       console.error('Error creating category:', error);
     } finally {
@@ -119,10 +128,10 @@ export default function TruckCategories() {
           <table className="w-full">
             <thead className="bg-gradient-to-r from-gray-50 to-gray-100">
               <tr>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">ID</th>
+                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Icon</th>
                 <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Name</th>
                 <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Description</th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Max Weight (kg)</th>
+                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Max Weight</th>
                 <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Actions</th>
               </tr>
             </thead>
@@ -131,7 +140,28 @@ export default function TruckCategories() {
                 const isEditing = editingId === cat.id;
                 return (
                   <tr key={cat.id} className="hover:bg-gray-50/50">
-                    <td className="px-6 py-4 text-sm font-medium text-gray-500">{cat.id}</td>
+                    <td className="px-6 py-4">
+                      {isEditing ? (
+                        <select
+                          value={editForm.icon ?? cat.icon ?? ''}
+                          onChange={(e) => setEditForm({ ...editForm, icon: e.target.value })}
+                          className="px-2 py-1 bg-gray-50 border rounded-lg focus:ring-2 focus:ring-indigo-500"
+                        >
+                          <option value="">No Icon</option>
+                          {availableIcons.map(icon => (
+                            <option key={icon.id} value={icon.id}>{icon.name}</option>
+                          ))}
+                        </select>
+                      ) : (
+                        <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center overflow-hidden">
+                          {cat.icon ? (
+                            <img src={`/icons/${cat.icon}.png`} alt={cat.name} className="w-8 h-8 object-contain" />
+                          ) : (
+                            <Package className="w-5 h-5 text-gray-400" />
+                          )}
+                        </div>
+                      )}
+                    </td>
                     <td className="px-6 py-4">
                       {isEditing ? (
                         <input
@@ -208,6 +238,22 @@ export default function TruckCategories() {
             <h2 className="text-xl font-bold text-gray-900 mb-4">Add Truck Category</h2>
             <div className="space-y-4">
               <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Icon</label>
+                <div className="flex gap-4">
+                  {availableIcons.map(icon => (
+                    <button
+                      key={icon.id}
+                      type="button"
+                      onClick={() => setNewCat({ ...newCat, icon: icon.id })}
+                      className={`flex-1 p-2 border-2 rounded-xl flex flex-col items-center gap-1 transition-all ${newCat.icon === icon.id ? 'border-indigo-600 bg-indigo-50' : 'border-gray-100 hover:border-gray-200'}`}
+                    >
+                      <img src={icon.path} alt={icon.name} className="w-10 h-10 object-contain" />
+                      <span className="text-[10px] font-semibold">{icon.name}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Name *</label>
                 <input
                   value={newCat.name}
@@ -239,7 +285,7 @@ export default function TruckCategories() {
             <div className="flex gap-3 mt-6">
               <button
                 type="button"
-                onClick={() => { setShowAdd(false); setNewCat({ name: '', description: '', max_weight_kg: '' }); }}
+                onClick={() => { setShowAdd(false); setNewCat({ name: '', description: '', max_weight_kg: '', icon: '' }); }}
                 className="flex-1 px-4 py-3 text-gray-700 bg-gray-100 rounded-xl font-medium hover:bg-gray-200"
               >
                 Cancel

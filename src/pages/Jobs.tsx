@@ -245,7 +245,7 @@ export default function Jobs() {
                     <div className="text-right">
                       <div className="flex items-center gap-1 mb-1">
                         <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
-                        <span className="text-sm text-gray-900">{driver.rating.toFixed(1)}</span>
+                        <span className="text-sm text-gray-900">{(driver.rating ?? 0).toFixed(1)}</span>
                       </div>
                       <div className="text-xs text-gray-500">{driver.completedJobs} jobs</div>
                     </div>

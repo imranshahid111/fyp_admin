@@ -27,12 +27,16 @@ export interface Driver {
   email: string;
   phone: string;
   licenseNumber: string;
+  cnic: string;
   truckOwnerId: string;
   truckOwnerName: string;
   assignedJobs: number;
   completedJobs: number;
   status: 'available' | 'on-job' | 'inactive';
   rating: number;
+  license_pic?: string;
+  cnic_front_pic?: string;
+  cnic_back_pic?: string;
 }
 
 export interface Job {
@@ -105,6 +109,19 @@ export interface Settings {
   platformCommission: number;
   supportEmail: string;
   supportPhone: string;
+}
+
+export interface Review {
+  id: number;
+  job_id: string;
+  from_id: string;
+  from_role: 'customer' | 'driver' | 'owner';
+  to_id: string;
+  to_role: 'customer' | 'driver' | 'owner';
+  rating: number;
+  comment: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface DashboardStats {

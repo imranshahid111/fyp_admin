@@ -12,7 +12,8 @@ import {
   Settings,
   Menu,
   X,
-  Package
+  Package,
+  MessageSquare
 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -26,6 +27,7 @@ const navigation = [
   { name: 'Fares', path: '/fares', icon: DollarSign },
   { name: 'Bookings', path: '/bookings', icon: Calendar },
   { name: 'Payments', path: '/payments', icon: CreditCard },
+  { name: 'Reviews', path: '/reviews', icon: MessageSquare },
   { name: 'Notifications', path: '/notifications', icon: Bell },
   // { name: 'Settings', path: '/settings', icon: Settings },
 ];

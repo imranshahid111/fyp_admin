@@ -231,7 +231,7 @@ export default function TruckOwners() {
                     {owner.rating > 0 ? (
                       <div className="flex items-center gap-1">
                         <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
-                        <span className="text-sm font-medium text-gray-900">{owner.rating.toFixed(1)}</span>
+                        <span className="text-sm font-medium text-gray-900">{(owner.rating ?? 0).toFixed(1)}</span>
                       </div>
                     ) : (
                       <span className="text-sm text-gray-400">N/A</span>

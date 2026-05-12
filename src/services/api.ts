@@ -11,9 +11,10 @@ import {
   Notification,
   Settings,
   DashboardStats,
+  Review,
 } from '../types';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://backendfyp-production-41c6.up.railway.app/api';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5001/api';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -27,6 +28,7 @@ api.interceptors.request.use((config) => {
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
+  console.log("API:", import.meta.env.VITE_API_BASE_URL);
   return config;
 });
 
@@ -108,6 +110,10 @@ export const apiService = {
   updateNotification: (id: string, notification: Partial<Notification>) =>
     api.put<Notification>(`/notifications/${id}`, notification),
   deleteNotification: (id: string) => api.delete(`/notifications/${id}`),
+
+  // Reviews / Feedback
+  getReviews: () => api.get<{ success: boolean; data: Review[] }>('/reviews'),
+  deleteReview: (id: number) => api.delete(`/reviews/${id}`),
 
   // Categories (admin CRUD)
   getCategories: () => api.get<{ success: boolean; data: any[] }>('/admin/categories'),

@@ -28,8 +28,8 @@ export default function Dashboard() {
           apiService.getStats(),
           apiService.getJobs()
         ]);
-        setStats(statsRes.data);
-        setRecentJobs(jobsRes.data.slice(0, 5));
+        setStats(statsRes?.data);
+        setRecentJobs(jobsRes?.data?.slice(0, 5));
       } catch (error) {
         console.error('Error fetching dashboard data:', error);
       } finally {
@@ -107,7 +107,7 @@ export default function Dashboard() {
     },
     {
       name: 'Total Revenue',
-      value: `$${stats.totalRevenue.toLocaleString()}`,
+      value: `$${(stats?.totalRevenue || 0).toLocaleString()}`,
       icon: DollarSign,
       gradient: 'from-indigo-500 to-purple-600',
       change: '+32%',
@@ -116,7 +116,7 @@ export default function Dashboard() {
     },
     {
       name: 'Pending Payments',
-      value: `$${stats.pendingPayments.toLocaleString()}`,
+      value: `$${(stats?.pendingPayments || 0).toLocaleString()}`,
       icon: TrendingUp,
       gradient: 'from-red-500 to-pink-600',
       change: '-5%',

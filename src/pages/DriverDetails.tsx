@@ -16,6 +16,7 @@ import {
     User,
     ShieldCheck,
     Calendar,
+    FileText,
 } from 'lucide-react';
 import { apiService } from '../services/api';
 import type { Driver, Job, TruckOwner } from '../types';
@@ -64,6 +65,7 @@ export default function DriverDetails() {
                     ...driverPayload,
                     id: String(driverPayload.id),
                     licenseNumber: driverPayload.licenseNumber ?? driverPayload.licence_number ?? '',
+                    cnic: driverPayload.cnic ?? '',
                     truckOwnerName: driverPayload.truckOwnerName ?? driverPayload.truck_owner_name ?? '',
                     truckOwnerId: String(driverPayload.truckOwnerId ?? driverPayload.truck_owner_id ?? ''),
                 };
@@ -186,7 +188,7 @@ export default function DriverDetails() {
                             <div className="flex flex-wrap items-center justify-center md:justify-start gap-4">
                                 <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/10 text-sm font-medium backdrop-blur-sm">
                                     <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
-                                    <span>{driver.rating.toFixed(1)} Rating</span>
+                                    <span>{(driver.rating ?? 0).toFixed(1)} Rating</span>
                                 </div>
                                 <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/10 text-sm font-medium backdrop-blur-sm">
                                     <Briefcase className="h-4 w-4 text-blue-300" />
@@ -212,6 +214,7 @@ export default function DriverDetails() {
                                 <DetailItem icon={<Mail className="text-blue-500" />} label="Email Address" value={driver.email} />
                                 <DetailItem icon={<Phone className="text-emerald-500" />} label="Phone Number" value={driver.phone} />
                                 <DetailItem icon={<Award className="text-amber-500" />} label="License Number" value={driver.licenseNumber} isMono />
+                                <DetailItem icon={<ShieldCheck className="text-indigo-500" />} label="CNIC Number" value={driver.cnic} isMono />
 
                                 {owner && (
                                     <div
@@ -232,12 +235,38 @@ export default function DriverDetails() {
                         {/* Quick Actions/Info Card could go here */}
                     </div>
 
-                    {/* Stats & History */}
+                    {/* Stats & History & Documents */}
                     <div className="lg:col-span-2 space-y-8">
+                        {/* Documents Section (New) */}
+                        <Card className="border-none shadow-sm bg-white rounded-2xl overflow-hidden">
+                            <CardHeader className="bg-gray-50/50 pb-4">
+                                <CardTitle className="text-sm font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                                    <FileText className="h-4 w-4" />
+                                    Verification Documents
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent className="p-6">
+                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                                    <DocPreview 
+                                        label="Driving License" 
+                                        src={driver.license_pic} 
+                                    />
+                                    <DocPreview 
+                                        label="CNIC (Front)" 
+                                        src={driver.cnic_front_pic} 
+                                    />
+                                    <DocPreview 
+                                        label="CNIC (Back)" 
+                                        src={driver.cnic_back_pic} 
+                                    />
+                                </div>
+                            </CardContent>
+                        </Card>
+
                         {/* Stats Grid */}
                         <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                             <StatGridItem label="Total Jobs" value={driver.completedJobs.toString()} icon={<History />} color="blue" />
-                            <StatGridItem label="Avg Rating" value={driver.rating.toFixed(1)} icon={<Star />} color="amber" />
+                            <StatGridItem label="Avg Rating" value={(driver.rating ?? 0).toFixed(1)} icon={<Star />} color="amber" />
                             <StatGridItem label="Success Rate" value="98.5%" icon={<ShieldCheck />} color="emerald" />
                         </div>
 
@@ -295,6 +324,38 @@ export default function DriverDetails() {
                         </Card>
                     </div>
                 </div>
+            </div>
+        </div>
+    );
+}
+
+function DocPreview({ label, src }: { label: string, src?: string }) {
+    const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5001/api';
+    const IMAGE_BASE_URL = API_URL.replace('/api', ''); // Get root URL for uploads
+    const fullSrc = src ? (src.startsWith('http') ? src : `${IMAGE_BASE_URL}/${src}`) : null;
+
+    return (
+        <div className="space-y-3">
+            <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">{label}</p>
+            <div className="aspect-[4/3] rounded-xl bg-slate-50 border border-slate-100 overflow-hidden group relative">
+                {fullSrc ? (
+                    <>
+                        <img src={fullSrc} alt={label} className="w-full h-full object-cover transition-transform group-hover:scale-105" />
+                        <a 
+                            href={fullSrc} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
+                        >
+                            <ExternalLink className="h-6 w-6 text-white" />
+                        </a>
+                    </>
+                ) : (
+                    <div className="w-full h-full flex flex-col items-center justify-center text-slate-300">
+                        <FileText className="h-8 w-8 mb-2" />
+                        <span className="text-[10px] font-bold uppercase">Not Uploaded</span>
+                    </div>
+                )}
             </div>
         </div>
     );
