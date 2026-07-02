@@ -25,7 +25,7 @@ const navigation = [
   { name: 'Drivers', path: '/drivers', icon: UserCog },
   { name: 'Jobs', path: '/jobs', icon: Briefcase },
   { name: 'Fares', path: '/fares', icon: DollarSign },
-  { name: 'Bookings', path: '/bookings', icon: Calendar },
+
   { name: 'Payments', path: '/payments', icon: CreditCard },
   { name: 'Reviews', path: '/reviews', icon: MessageSquare },
   { name: 'Notifications', path: '/notifications', icon: Bell },

@@ -49,11 +49,12 @@ export default function Dashboard() {
   }
 
   if (!stats) return null;
+  console.log(stats)
 
   const statCards = [
     {
       name: 'Total Users',
-      value: stats.totalUsers,
+      value: stats?.data?.totalUsers,
       icon: Users,
       gradient: 'from-blue-500 to-cyan-600',
       change: '+12%',
@@ -62,7 +63,7 @@ export default function Dashboard() {
     },
     {
       name: 'Truck Owners',
-      value: stats.totalTruckOwners,
+      value: stats?.data?.totalTruckOwners || 0,
       icon: Truck,
       gradient: 'from-purple-500 to-pink-600',
       change: '+8%',
@@ -71,7 +72,7 @@ export default function Dashboard() {
     },
     {
       name: 'Drivers',
-      value: stats.totalDrivers,
+      value: stats?.data?.totalDrivers || 0,
       icon: UserCog,
       gradient: 'from-green-500 to-emerald-600',
       change: '+15%',
@@ -80,7 +81,7 @@ export default function Dashboard() {
     },
     {
       name: 'Total Jobs',
-      value: stats.totalJobs,
+      value: stats?.data?.totalJobs,
       icon: Briefcase,
       gradient: 'from-orange-500 to-red-600',
       change: '+23%',
@@ -89,7 +90,7 @@ export default function Dashboard() {
     },
     {
       name: 'Active Jobs',
-      value: stats.activeJobs,
+      value: stats?.data?.activeJobs,
       icon: Clock,
       gradient: 'from-yellow-500 to-orange-600',
       change: '+5%',
@@ -98,7 +99,7 @@ export default function Dashboard() {
     },
     {
       name: 'Completed Jobs',
-      value: stats.completedJobs,
+      value: stats?.data?.completedJobs,
       icon: CheckCircle,
       gradient: 'from-teal-500 to-cyan-600',
       change: '+18%',
@@ -107,7 +108,7 @@ export default function Dashboard() {
     },
     {
       name: 'Total Revenue',
-      value: `$${(stats?.totalRevenue || 0).toLocaleString()}`,
+      value: `$${(stats?.data?.totalRevenue || 0).toLocaleString()}`,
       icon: DollarSign,
       gradient: 'from-indigo-500 to-purple-600',
       change: '+32%',
@@ -116,7 +117,7 @@ export default function Dashboard() {
     },
     {
       name: 'Pending Payments',
-      value: `$${(stats?.pendingPayments || 0).toLocaleString()}`,
+      value: `$${(stats?.data?.pendingPayments || 0).toLocaleString()}`,
       icon: TrendingUp,
       gradient: 'from-red-500 to-pink-600',
       change: '-5%',
@@ -207,7 +208,7 @@ export default function Dashboard() {
                       {job.truckType}
                     </span>
                   </td>
-                  <td className="px-6 py-4 text-sm font-semibold text-gray-900">${job.fare}</td>
+                  <td className="px-6 py-4 text-sm font-semibold text-gray-900">{job.fare}</td>
                   <td className="px-6 py-4">
                     <StatusBadge status={job.status} type="job" />
                   </td>
@@ -256,7 +257,7 @@ export default function Dashboard() {
             </span>
           </div>
           <p className="text-sm opacity-90 mb-1">Platform Users</p>
-          <p className="text-3xl font-bold">{stats.totalUsers + stats.totalTruckOwners + stats.totalDrivers}</p>
+          <p className="text-3xl font-bold">{(stats?.data?.totalUsers || 0) + (stats?.data?.totalTruckOwners || 0) + (stats?.data?.totalDrivers || 0)}</p>
         </div>
       </div>
     </div>

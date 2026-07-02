@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router';
 import {
     ArrowLeft, Building2, User, Mail, Phone, Calendar,
     Truck, Users, Star, DollarSign, History, CheckCircle,
-    XCircle, Ban, Loader2, MapPin
+    XCircle, Ban, Loader2, MapPin, FileText, ExternalLink
 } from 'lucide-react';
 import { apiService } from '../services/api';
 import type { TruckOwner, Driver, Job } from '../types';
@@ -20,6 +20,7 @@ export default function TruckOwnerDetails() {
     const [owner, setOwner] = useState<TruckOwner | null>(null);
     const [drivers, setDrivers] = useState<Driver[]>([]);
     const [jobs, setJobs] = useState<Job[]>([]);
+    const [trucks, setTrucks] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -68,12 +69,15 @@ export default function TruckOwnerDetails() {
                     totalDrivers: ownerData.totalDrivers ?? driversForOwner.length ?? 0,
                     status: ownerData.status ?? 'pending',
                     rating: ownerData.rating ?? 0,
+                    cnic_front_img: ownerData.cnic_front_img,
+                    cnic_back_img: ownerData.cnic_back_img,
                 };
                 setOwner(mapped);
             } else {
                 setOwner(null);
             }
             setDrivers(driversForOwner);
+            setTrucks(trucksFromPayload);
             setJobs(jobsList.filter((j: Job) => String(j.truckOwnerId) === id));
         } catch (error) {
             console.error('Error fetching owner details:', error);
@@ -293,6 +297,45 @@ export default function TruckOwnerDetails() {
                         </Card>
                     </div>
 
+                    {/* Verification Documents */}
+                    <Card className="rounded-[32px] border-none shadow-sm overflow-hidden bg-white">
+                        <CardHeader className="p-8 border-b border-slate-50 flex flex-row items-center justify-between">
+                            <div className="flex items-center gap-3">
+                                <div className="p-2.5 bg-blue-50 rounded-xl">
+                                    <FileText className="w-6 h-6 text-blue-600" />
+                                </div>
+                                <CardTitle className="text-2xl font-bold">Verification Documents</CardTitle>
+                            </div>
+                        </CardHeader>
+                        <CardContent className="p-8 space-y-8">
+                            <div>
+                                <h3 className="text-sm font-bold uppercase text-slate-500 mb-4">Owner CNIC</h3>
+                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                                    <DocPreview label="CNIC (Front)" src={(owner as any).cnic_front_img} />
+                                    <DocPreview label="CNIC (Back)" src={(owner as any).cnic_back_img} />
+                                </div>
+                            </div>
+
+                            {trucks.length > 0 && (
+                                <div className="pt-6 border-t border-slate-100">
+                                    <h3 className="text-sm font-bold uppercase text-slate-500 mb-4">Truck Documents</h3>
+                                    <div className="space-y-6">
+                                        {trucks.map(truck => (
+                                            <div key={truck.id} className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                                                <p className="font-bold text-slate-900 mb-4">Truck #{truck.registration_number}</p>
+                                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                                                    <DocPreview label="Registration" src={truck.registration_doc} />
+                                                    <DocPreview label="Fitness Certificate" src={truck.fitness_doc} />
+                                                    <DocPreview label="Insurance" src={truck.insurance_doc} />
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                        </CardContent>
+                    </Card>
+
                     {/* Drivers List */}
                     <Card className="rounded-[32px] border-none shadow-sm overflow-hidden bg-white">
                         <CardHeader className="p-8 border-b border-slate-50 flex flex-row items-center justify-between">
@@ -430,6 +473,38 @@ export default function TruckOwnerDetails() {
                         </CardContent>
                     </Card>
                 </div>
+            </div>
+        </div>
+    );
+}
+
+function DocPreview({ label, src }: { label: string, src?: string }) {
+    const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5001/api';
+    const IMAGE_BASE_URL = API_URL.replace('/api', ''); 
+    const fullSrc = src ? (src.startsWith('http') ? src : `${IMAGE_BASE_URL}/${src}`) : null;
+
+    return (
+        <div className="space-y-3">
+            <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">{label}</p>
+            <div className="aspect-[4/3] rounded-xl bg-slate-50 border border-slate-100 overflow-hidden group relative">
+                {fullSrc ? (
+                    <>
+                        <img src={fullSrc} alt={label} className="w-full h-full object-cover transition-transform group-hover:scale-105" />
+                        <a 
+                            href={fullSrc} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
+                        >
+                            <ExternalLink className="h-6 w-6 text-white" />
+                        </a>
+                    </>
+                ) : (
+                    <div className="w-full h-full flex flex-col items-center justify-center text-slate-300">
+                        <FileText className="h-8 w-8 mb-2" />
+                        <span className="text-[10px] font-bold uppercase">Not Uploaded</span>
+                    </div>
+                )}
             </div>
         </div>
     );

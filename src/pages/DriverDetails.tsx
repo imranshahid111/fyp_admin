@@ -249,15 +249,15 @@ export default function DriverDetails() {
                                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
                                     <DocPreview 
                                         label="Driving License" 
-                                        src={driver.license_pic} 
+                                        src={(driver as any).licence_img} 
                                     />
                                     <DocPreview 
                                         label="CNIC (Front)" 
-                                        src={driver.cnic_front_pic} 
+                                        src={(driver as any).cnic_front_img} 
                                     />
                                     <DocPreview 
                                         label="CNIC (Back)" 
-                                        src={driver.cnic_back_pic} 
+                                        src={(driver as any).cnic_back_img} 
                                     />
                                 </div>
                             </CardContent>

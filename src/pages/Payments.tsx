@@ -29,7 +29,7 @@ export default function Payments() {
     try {
       setLoading(true);
       const res = await apiService.getPayments();
-      setPayments(res.data);
+      setPayments(res.data?.data ?? res.data ?? []);
     } catch (error) {
       console.error('Error fetching payments data:', error);
     } finally {
