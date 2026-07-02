@@ -188,7 +188,7 @@ export default function DriverDetails() {
                             <div className="flex flex-wrap items-center justify-center md:justify-start gap-4">
                                 <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/10 text-sm font-medium backdrop-blur-sm">
                                     <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
-                                    <span>{(driver.rating ?? 0).toFixed(1)} Rating</span>
+                                    <span>{Number(driver.rating ?? 0).toFixed(1)} Rating</span>
                                 </div>
                                 <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/10 text-sm font-medium backdrop-blur-sm">
                                     <Briefcase className="h-4 w-4 text-blue-300" />
@@ -266,7 +266,7 @@ export default function DriverDetails() {
                         {/* Stats Grid */}
                         <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                             <StatGridItem label="Total Jobs" value={driver.completedJobs.toString()} icon={<History />} color="blue" />
-                            <StatGridItem label="Avg Rating" value={(driver.rating ?? 0).toFixed(1)} icon={<Star />} color="amber" />
+                            <StatGridItem label="Avg Rating" value={Number(driver.rating ?? 0).toFixed(1)} icon={<Star />} color="amber" />
                             <StatGridItem label="Success Rate" value="98.5%" icon={<ShieldCheck />} color="emerald" />
                         </div>
 

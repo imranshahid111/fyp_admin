@@ -168,13 +168,12 @@ export default function Jobs() {
                 <tr key={job.id} className="hover:bg-gray-50">
                   <td className="px-6 py-4 text-sm font-medium text-gray-900">{job.id}</td>
                   <td className="px-6 py-4 text-sm text-gray-900">{job.userName}</td>
-                  <td className="px-6 py-4">
-                    <div className="flex items-start gap-2">
-                      <MapPin className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" />
-                      <div className="text-sm">
-                        <div className="text-gray-900">{job.pickupLocation}</div>
-                        <div className="text-gray-500">→ {job.deliveryLocation}</div>
-                        <div className="text-xs text-gray-400">{job.distance} km</div>
+                  <td className="px-6 py-4" title={`${job.pickupLocation} → ${job.deliveryLocation}`}>
+                    <div className="flex items-center gap-1.5 cursor-help bg-slate-50 border border-slate-100 hover:bg-slate-100 hover:border-slate-200 transition-all rounded-lg px-2.5 py-1.5 inline-flex max-w-[280px]">
+                      <MapPin className="w-4 h-4 text-indigo-600 flex-shrink-0" />
+                      <div className="text-sm font-medium text-slate-800 truncate">
+                        {((job.pickupLocation || '').split(',')[0].trim().substring(0, 20) + ((job.pickupLocation || '').split(',')[0].trim().length > 20 ? '...' : ''))} → {((job.deliveryLocation || '').split(',')[0].trim().substring(0, 20) + ((job.deliveryLocation || '').split(',')[0].trim().length > 20 ? '...' : ''))}
+                        <span className="text-[10px] text-gray-400 font-bold ml-1.5 bg-white border border-gray-100 rounded-md px-1 py-0.5">{job.distance} km</span>
                       </div>
                     </div>
                   </td>
@@ -245,7 +244,7 @@ export default function Jobs() {
                     <div className="text-right">
                       <div className="flex items-center gap-1 mb-1">
                         <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
-                        <span className="text-sm text-gray-900">{(driver.rating ?? 0).toFixed(1)}</span>
+                        <span className="text-sm text-gray-900">{Number(driver.rating ?? 0).toFixed(1)}</span>
                       </div>
                       <div className="text-xs text-gray-500">{driver.completedJobs} jobs</div>
                     </div>

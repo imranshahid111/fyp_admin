@@ -357,7 +357,7 @@ export default function Drivers() {
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-1">
                       <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
-                      <span className="text-sm font-medium text-gray-900">{(driver.rating ?? 0).toFixed(1)}</span>
+                      <span className="text-sm font-medium text-gray-900">{Number(driver.rating ?? 0).toFixed(1)}</span>
                     </div>
                   </td>
                   <td className="px-6 py-4">

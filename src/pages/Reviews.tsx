@@ -44,7 +44,7 @@ export default function Reviews() {
   );
 
   const avgRating = reviews.length
-    ? (reviews.reduce((s, r) => s + r.rating, 0) / reviews.length).toFixed(1)
+    ? (reviews.reduce((s, r) => s + Number(r.rating || 0), 0) / reviews.length).toFixed(1)
     : '0.0';
 
   const statCards = [

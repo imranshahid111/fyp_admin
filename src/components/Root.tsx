@@ -24,7 +24,7 @@ const navigation = [
   { name: 'Truck Categories', path: '/categories', icon: Package },
   { name: 'Drivers', path: '/drivers', icon: UserCog },
   { name: 'Jobs', path: '/jobs', icon: Briefcase },
-  { name: 'Fares', path: '/fares', icon: DollarSign },
+  // { name: 'Fares', path: '/fares', icon: DollarSign },
 
   { name: 'Payments', path: '/payments', icon: CreditCard },
   { name: 'Reviews', path: '/reviews', icon: MessageSquare },
@@ -65,7 +65,7 @@ export default function Root() {
             <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center">
               <Truck className="w-6 h-6 text-white" />
             </div>
-            <h1 className="font-bold text-xl text-gray-900">TruckAdmin</h1>
+            <h1 className="font-bold text-xl text-gray-900">MOVERS</h1>
           </div>
           <button
             onClick={() => setSidebarOpen(false)}

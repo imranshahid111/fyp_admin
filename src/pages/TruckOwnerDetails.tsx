@@ -241,7 +241,7 @@ export default function TruckOwnerDetails() {
                             <div className="pt-4 border-t border-slate-100 flex items-center justify-between">
                                 <div className="flex items-center gap-1.5">
                                     <Star className="w-5 h-5 text-amber-400 fill-amber-400" />
-                                    <span className="text-xl font-black text-slate-900">{(owner.rating ?? 0).toFixed(1)}</span>
+                                    <span className="text-xl font-black text-slate-900">{Number(owner.rating ?? 0).toFixed(1)}</span>
                                     <span className="text-slate-400 text-sm font-medium">/ 5.0</span>
                                 </div>
                                 <Badge variant="secondary" className="bg-indigo-50 text-indigo-600 font-bold py-1 px-3 rounded-lg border-indigo-100">
@@ -388,7 +388,7 @@ export default function TruckOwnerDetails() {
                                                 <TableCell className="px-8 py-5">
                                                     <div className="flex items-center justify-center gap-1.5">
                                                         <Star className="w-4 h-4 text-amber-400 fill-amber-400" />
-                                                        <span className="font-bold text-slate-900">{(driver.rating ?? 0).toFixed(1)}</span>
+                                                        <span className="font-bold text-slate-900">{Number(driver.rating ?? 0).toFixed(1)}</span>
                                                     </div>
                                                 </TableCell>
                                                 <TableCell className="px-8 py-5 text-right">

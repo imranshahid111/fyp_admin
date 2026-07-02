@@ -14,7 +14,7 @@ import {
   Review,
 } from '../types';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://fypback-production.up.railway.app/api';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://fypbackend-production-795e.up.railway.app/api';
 // const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'localhost:5001/api';
 
 
@@ -106,12 +106,12 @@ export const apiService = {
   deletePayment: (id: string) => api.delete(`/payments/${id}`),
 
   // Notifications (legacy)
-  getNotifications: () => api.get<Notification[]>('/notifications'),
+  getNotifications: () => api.get<{ success: boolean; data: Notification[] }>('/notifications'),
   createNotification: (notification: Partial<Notification>) =>
-    api.post<Notification>('/notifications', notification),
+    api.post<{ success: boolean; data: Notification }>('/notifications', notification),
   updateNotification: (id: string, notification: Partial<Notification>) =>
-    api.put<Notification>(`/notifications/${id}`, notification),
-  deleteNotification: (id: string) => api.delete(`/notifications/${id}`),
+    api.put<{ success: boolean; data: Notification }>(`/notifications/${id}`, notification),
+  deleteNotification: (id: string) => api.delete<{ success: boolean }>(`/notifications/${id}`),
 
   // Reviews / Feedback
   getReviews: () => api.get<{ success: boolean; data: Review[] }>('/reviews'),

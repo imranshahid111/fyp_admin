@@ -22,7 +22,8 @@ export default function Notifications() {
     try {
       setLoading(true);
       const res = await apiService.getNotifications();
-      setNotifications(res.data);
+      // Backend returns { success: true, data: [...] }
+      setNotifications(res.data.data || []);
     } catch (error) {
       console.error('Error fetching notifications:', error);
     } finally {
@@ -30,18 +31,21 @@ export default function Notifications() {
     }
   };
 
-  const handleCreate = async () => {
+  const handleCreate = async (status: 'draft' | 'sent') => {
     if (newNotification.title && newNotification.message) {
       try {
         const notificationData = {
           ...newNotification,
           id: `N${Date.now().toString().slice(-3)}`,
           createdDate: new Date().toISOString().split('T')[0],
-          status: 'draft' as const,
+          status,
         };
 
         const res = await apiService.createNotification(notificationData);
-        setNotifications([res.data, ...notifications]);
+        // Backend returns { success: true, data: notification }
+        if (res.data.data) {
+          setNotifications([res.data.data, ...notifications]);
+        }
         setNewNotification({
           title: '',
           message: '',
@@ -58,7 +62,7 @@ export default function Notifications() {
   const handleSend = async (id: string) => {
     try {
       await apiService.updateNotification(id, { status: 'sent' });
-      setNotifications(notifications.map(notif =>
+      setNotifications(notifications?.map(notif =>
         notif.id === id ? { ...notif, status: 'sent' as const } : notif
       ));
     } catch (error) {
@@ -116,7 +120,7 @@ export default function Notifications() {
 
       {/* Notifications List */}
       <div className="space-y-4">
-        {notifications.map((notification) => (
+        {notifications?.map((notification) => (
           <div key={notification.id} className="bg-white rounded-lg shadow p-6">
             <div className="flex items-start justify-between">
               <div className="flex-1">
@@ -241,11 +245,19 @@ export default function Notifications() {
                 Cancel
               </button>
               <button
-                onClick={handleCreate}
+                onClick={() => handleCreate('draft')}
                 disabled={!newNotification.title || !newNotification.message}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
               >
                 Create as Draft
+              </button>
+              <button
+                onClick={() => handleCreate('sent')}
+                disabled={!newNotification.title || !newNotification.message}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center gap-2"
+              >
+                <Send className="w-4 h-4" />
+                Send Immediately
               </button>
             </div>
           </div>
