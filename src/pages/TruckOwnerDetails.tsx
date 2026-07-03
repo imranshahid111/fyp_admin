@@ -29,6 +29,54 @@ export default function TruckOwnerDetails() {
         }
     }, [id]);
 
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [cnicNum, setCnicNum] = useState('');
+    const [cnicFrontFile, setCnicFrontFile] = useState<File | null>(null);
+    const [cnicBackFile, setCnicBackFile] = useState<File | null>(null);
+    const [submitting, setSubmitting] = useState(false);
+
+    useEffect(() => {
+        if (owner) {
+            setCnicNum(owner.cnic || '');
+        }
+    }, [owner, isEditModalOpen]);
+
+    const handleUpdateCnic = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!owner) return;
+        
+        try {
+            setSubmitting(true);
+            const formData = new FormData();
+            formData.append('cnic', cnicNum);
+            if (cnicFrontFile) {
+                formData.append('cnic_front_img', cnicFrontFile);
+            }
+            if (cnicBackFile) {
+                formData.append('cnic_back_img', cnicBackFile);
+            }
+
+            const res = await apiService.updateTruckOwner(String(owner.id), formData);
+            const payload = res.data?.data ?? res.data;
+            const updatedOwner = payload?.owner ?? payload;
+            if (updatedOwner) {
+                setOwner({
+                    ...owner,
+                    cnic: updatedOwner.cnic ?? cnicNum,
+                    cnic_front_img: updatedOwner.cnic_front_img ?? owner.cnic_front_img,
+                    cnic_back_img: updatedOwner.cnic_back_img ?? owner.cnic_back_img,
+                });
+            }
+            setIsEditModalOpen(false);
+            setCnicFrontFile(null);
+            setCnicBackFile(null);
+        } catch (error) {
+            console.error('Error updating CNIC details:', error);
+        } finally {
+            setSubmitting(false);
+        }
+    };
+
     const fetchOwnerData = async () => {
         try {
             setLoading(true);
@@ -69,6 +117,7 @@ export default function TruckOwnerDetails() {
                     totalDrivers: ownerData.totalDrivers ?? driversForOwner.length ?? 0,
                     status: ownerData.status ?? 'pending',
                     rating: ownerData.rating ?? 0,
+                    cnic: ownerData.cnic ?? '',
                     cnic_front_img: ownerData.cnic_front_img,
                     cnic_back_img: ownerData.cnic_back_img,
                 };
@@ -309,7 +358,23 @@ export default function TruckOwnerDetails() {
                         </CardHeader>
                         <CardContent className="p-8 space-y-8">
                             <div>
-                                <h3 className="text-sm font-bold uppercase text-slate-500 mb-4">Owner CNIC</h3>
+                                <div className="flex items-center justify-between mb-4">
+                                    <h3 className="text-sm font-bold uppercase text-slate-500">Owner CNIC</h3>
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => setIsEditModalOpen(true)}
+                                        className="rounded-xl border-indigo-200 text-indigo-600 hover:bg-indigo-50 font-bold"
+                                    >
+                                        Update CNIC Details
+                                    </Button>
+                                </div>
+                                <div className="mb-6 bg-slate-50 p-4 rounded-2xl border border-slate-100 flex items-center justify-between">
+                                    <div>
+                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">CNIC Number</p>
+                                        <p className="text-slate-900 font-bold text-lg font-mono">{owner.cnic || 'Not Provided'}</p>
+                                    </div>
+                                </div>
                                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
                                     <DocPreview label="CNIC (Front)" src={(owner as any).cnic_front_img} />
                                     <DocPreview label="CNIC (Back)" src={(owner as any).cnic_back_img} />
@@ -474,6 +539,87 @@ export default function TruckOwnerDetails() {
                     </Card>
                 </div>
             </div>
+
+            {/* Modal Overlay */}
+            {isEditModalOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="bg-white rounded-[32px] w-full max-w-lg p-8 shadow-2xl relative space-y-6 mx-4 animate-in zoom-in-95 duration-200">
+                        <div className="space-y-2">
+                            <h2 className="text-2xl font-black text-slate-900">Update CNIC Details</h2>
+                            <p className="text-sm text-slate-500">Provide the CNIC number and upload the verification images for {owner.name}.</p>
+                        </div>
+                        
+                        <form onSubmit={handleUpdateCnic} className="space-y-5">
+                            <div className="space-y-2">
+                                <label className="text-xs font-black uppercase text-slate-400 tracking-wider">CNIC Number</label>
+                                <input
+                                    type="text"
+                                    placeholder="e.g. 12345-1234567-1"
+                                    value={cnicNum}
+                                    onChange={(e) => setCnicNum(e.target.value)}
+                                    className="w-full h-12 px-4 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono text-slate-800"
+                                />
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <label className="text-xs font-black uppercase text-slate-400 tracking-wider">CNIC Front Image</label>
+                                    <div className="relative border border-dashed border-slate-300 rounded-xl p-4 flex flex-col items-center justify-center bg-slate-50/50 hover:bg-slate-50 transition-colors">
+                                        <input
+                                            type="file"
+                                            accept="image/*"
+                                            onChange={(e) => setCnicFrontFile(e.target.files?.[0] || null)}
+                                            className="absolute inset-0 opacity-0 cursor-pointer"
+                                        />
+                                        <FileText className="w-6 h-6 text-slate-400 mb-1" />
+                                        <span className="text-[10px] font-bold text-slate-600 truncate max-w-[150px]">
+                                            {cnicFrontFile ? cnicFrontFile.name : 'Choose Front file'}
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <label className="text-xs font-black uppercase text-slate-400 tracking-wider">CNIC Back Image</label>
+                                    <div className="relative border border-dashed border-slate-300 rounded-xl p-4 flex flex-col items-center justify-center bg-slate-50/50 hover:bg-slate-50 transition-colors">
+                                        <input
+                                            type="file"
+                                            accept="image/*"
+                                            onChange={(e) => setCnicBackFile(e.target.files?.[0] || null)}
+                                            className="absolute inset-0 opacity-0 cursor-pointer"
+                                        />
+                                        <FileText className="w-6 h-6 text-slate-400 mb-1" />
+                                        <span className="text-[10px] font-bold text-slate-600 truncate max-w-[150px]">
+                                            {cnicBackFile ? cnicBackFile.name : 'Choose Back file'}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="flex gap-3 pt-4">
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    onClick={() => {
+                                        setIsEditModalOpen(false);
+                                        setCnicFrontFile(null);
+                                        setCnicBackFile(null);
+                                    }}
+                                    className="flex-1 h-12 rounded-xl border-slate-200 text-slate-600 font-bold hover:bg-slate-50"
+                                >
+                                    Cancel
+                                </Button>
+                                <Button
+                                    type="submit"
+                                    disabled={submitting}
+                                    className="flex-1 h-12 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold"
+                                >
+                                    {submitting ? 'Updating...' : 'Save Changes'}
+                                </Button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

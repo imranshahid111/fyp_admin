@@ -19,6 +19,9 @@ export interface TruckOwner {
   totalDrivers: number;
   status: 'pending' | 'approved' | 'rejected' | 'inactive' | 'suspended';
   rating: number;
+  cnic?: string;
+  cnic_front_img?: string;
+  cnic_back_img?: string;
 }
 
 export interface Driver {

@@ -71,6 +71,10 @@ export const apiService = {
     api.patch<{ success: boolean; data: any }>(`/admin/truck-owners/${id}/reject`),
   suspendTruckOwner: (id: string) =>
     api.patch<{ success: boolean; data: any }>(`/admin/truck-owners/${id}/suspend`),
+  updateTruckOwner: (id: string, payload: any) =>
+    api.put<{ success: boolean; data: any }>(`/admin/truck-owners/${id}`, payload, {
+      headers: payload instanceof FormData ? { 'Content-Type': 'multipart/form-data' } : undefined,
+    }),
 
   // Drivers (new admin endpoints)
   getDrivers: () => api.get<{ success: boolean; data: Driver[] }>('/admin/drivers'),
